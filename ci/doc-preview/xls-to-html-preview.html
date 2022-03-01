@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+            height: 100%;
+
+            touch-action: manipulation;
+        }
+
+        iframe {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app" style="height: 100vh;width: 100%;"></div>
+    <script src="https://cdn.bootcss.com/babel-core/5.8.35/browser.min.js"></script>
+    <script src="https://cdn.bootcss.com/babel-core/5.8.35/browser-polyfill.min.js"></script>
+    <script src="./src/base64.js"></script>
+    <script src="./src/sdk-v0.1.1.js"></script>
+
+    <script type="text/babel">
+
+        window.onload = async function () {
+            var url = await COSDocPreviewSDK.getPreviewUrl({
+                // objectUrl：输入cos文件地址
+                objectUrl: 'https://test-125XXXXXXX.cos.ap-chongqing.myqcloud.com/test.xls',
+                copyable: 0,
+                htmlwaterword: Base64.encodeUrl('test'),
+                htmlfillstyle: Base64.encodeUrl('#006eff'),
+                htmlfillstyle: Base64.encodeUrl('rgba(255,0,0,0.5)'),
+                htmlfront: Base64.encodeUrl('bold 10px Serif'),
+                htmlrotate: 30,
+                htmlhorizontal: 100,
+                htmlvertical: 40,
+                credentials: {      // 如果预览文件是私有的，则需要携带访问凭证。
+                    authorization: 'q-sign-algorithmxxxxxxxxxxxxxxx',
+                }
+            })
+
+            const demo = COSDocPreviewSDK.config({
+                mount: document.querySelector('.app'),
+                url,
+                mode: 'normal',
+                commonOptions: {
+                    isShowHeader: false,
+                    isShowTopArea: false
+                }
+            });
+
+            demo.on('fileOpen', (data) => {
+                console.log('打开成功');
+                test();
+            });
+
+            const test = async () => {
+                await demo.ready();
+                console.log('demo ready');
+
+                testXls();
+            }
+
+            const testXls = async () => {
+                const app = demo.ExcelApplication()
+                // 获取当前sheet名称
+                const name = await app.ActiveSheet.Name
+                console.log('ActiveSheet:', name)
+            }
+        }
+
+    </script>
+</body>
+
+</html>
