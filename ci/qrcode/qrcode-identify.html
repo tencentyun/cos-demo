@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <style>
+        #app {
+            padding: 50px;
+            text-align: center;
+        }
+
+        #result {
+            margin: 20px auto 0;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <textarea id="content" placeholder="输入COS图片地址，如https://example-1250000000.cos.ap-chongqing.myqcloud.com/example.jpg" rows="5" cols="50"></textarea>
+        <div>
+            <button id="btn1">识别二维码</button>
+        </div>
+        <div id="result"></div>
+    </div>
+</body>
+
+    <script src="./xml2json.js"></script>
+    <script type="text/javascript">
+        // 生成二维码
+        document.querySelector('#btn1').onclick = function () {
+            let url = document.querySelector('#content').value.trim();
+
+            if (url === '') {
+                return alert('输入COS图片地址')
+            }
+
+            // 请求签名，详情请参见文档 https://cloud.tencent.com/document/product/436/7778
+            const sign = 'q-sign-algorithm=xxx'
+
+            url = url + '?ci-process=QRcode&cover=0&' + sign;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('get', url);
+            xhr.send();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    document.querySelector('#result').innerText = xhr.responseText;
+                }
+            }
+
+        }
+
+        
+    </script>
+
+</html>
