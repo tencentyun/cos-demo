@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <style>
+        #app {
+            padding: 50px;
+            text-align: center;
+        }
+
+        #result {
+            margin: 20px auto 0;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <textarea id="content" placeholder="输入二维码内容" rows="5" cols="50"></textarea>
+        <div>
+            <button id="btn1">生成二维码</button>
+            <button id="btn2">生成条形码</button>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script src="./xml2json.js"></script>
+    <script type="text/javascript">
+        // 生成二维码
+        document.querySelector('#btn1').onclick = function () {
+            const msg = document.querySelector('#content').value.trim();
+
+            if (msg === '') {
+                return alert('请输入二维码内容')
+            }
+
+            // 请求签名，详情请参见文档 https://cloud.tencent.com/document/product/436/7778
+            const sign = 'q-sign-algorithm=xxx'
+
+            // 将example-1250000000 替换为自己的COS bucketId，将ap-chongqing替换为bucket对应的地域
+            const url = 'https://example-1250000000.cos.ap-chongqing.myqcloud.com/?ci-process=qrcode-generate&mode=0&width=500&qrcode-content=' + encodeURIComponent(msg) + '&' + sign;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('get', url);
+            xhr.send();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // 数据是xml格式
+                    let data = xml2js(xhr.responseXML);
+                    // 修改页面的显示
+                    document.querySelector('#result').innerHTML = '<img src="data:image/png;base64,' + data.Response.ResultImage + '" alt="">';
+                    
+                }
+            }
+
+        }
+
+        // 生成条形码
+        document.querySelector('#btn2').onclick = function () {
+            const msg = document.querySelector('#content').value.trim();
+
+            if (msg === '') {
+                return alert('请输入二维码内容')
+            }
+
+            // 请求签名，详情请参见文档 https://cloud.tencent.com/document/product/436/7778
+            const sign = 'q-sign-algorithm=xxx'
+
+            // 将example-1250000000 替换为自己的COS bucketId，将ap-chongqing替换为bucket对应的地域
+            const url = 'https://example-1250000000.cos.ap-chongqing.myqcloud.com/?ci-process=qrcode-generate&mode=1&qrcode-content=' + encodeURIComponent(msg) + '&' + sign;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('get', url);
+            xhr.send();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // 数据是xml格式
+                    let data = xml2js(xhr.responseXML);
+                    // 修改页面的显示
+                    document.querySelector('#result').innerHTML = '<img src="data:image/png;base64,' + data.Response.ResultImage + '" alt="">';
+                    
+                }
+            }
+
+        }
+
+    </script>
+</body>
+
+</html>
