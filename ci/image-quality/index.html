@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <style>
+        #app {
+            padding: 50px;
+            text-align: center;
+        }
+
+        #result {
+            margin: 20px auto 0;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <textarea id="content" placeholder="输入COS图片地址，如https://example-1250000000.cos.ap-chongqing.myqcloud.com/example.jpg，图片支持格式：PNG、JPG、JPEG" rows="5" cols="50"></textarea>
+        <div>
+            <button id="btn1">图片质量评估</button>
+        </div>
+        <div id="result">
+        </div>
+    </div>
+</body>
+
+    <script src="./xml2json.js"></script>
+    <script type="text/javascript">
+        // 生成二维码
+        document.querySelector('#btn1').onclick = function () {
+            let url = document.querySelector('#content').value.trim();
+
+            if (url === '') {
+                return alert('输入COS图片地址')
+            }
+
+            // 请求签名，详情请参见文档 https://cloud.tencent.com/document/product/436/7778
+            const sign = 'q-sign-algorithm=xxx'
+
+            url = url + '?ci-process=AssessQuality&' + sign;
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('get', url);
+            xhr.send();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    const data = xml2js(xhr.responseXML);
+                    const info = data?.Response || {};
+                    const LongImage = `长图（长宽比大于等于3或小于等于1/3）：${info.LongImage === 'true' ? '是' : '否'}`
+                    const BlackAndWhite = `黑白图（即灰度图，并非视觉上的“黑白”）：${info.BlackAndWhite === 'true' ? '是' : '否'}`
+                    const SmallImage = `小图（最长边小于179像素的图）：${info.SmallImage === 'true' ? '是' : '否'}`
+                    const BigImage = `大图（最短边大于1000像素的图）：${info.BigImage === 'true' ? '是' : '否'}`
+                    const PureImage = `纯色图或纯文字图（即没有内容或只有简单内容）：${info.PureImage === 'true' ? '是' : '否'}`
+                    const ClarityScore = `图像清晰度（取值[0, 100]，越大越清晰）：${info.ClarityScore }`
+                    const AestheticScore = `图像美观度（取值[0, 100]，越大越美观）：${info.AestheticScore}`
+                    document.querySelector('#result').innerText = [LongImage, BlackAndWhite, SmallImage, BigImage, PureImage, ClarityScore, AestheticScore].join('\n')
+                }
+            }
+        }
+    </script>
+
+</html>
