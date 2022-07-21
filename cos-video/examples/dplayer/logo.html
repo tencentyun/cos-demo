@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>COS 音视频</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="dplayer" style="width: 100%; height:450px"></div>
+    <script src="https://cdn.jsdelivr.net/npm/dplayer@1.26.0/dist/DPlayer.min.js"></script>
+    <script>
+      const dp = new DPlayer({
+        container: document.getElementById('dplayer'),
+        video: {
+          url: 'https://cos-video-1258344699.cos.ap-guangzhou.tencentcos.cn/test.mp4',
+        },
+        logo: 'https://cloudcache.tencent-cloud.com/qcloud/ui/static/portal_producticon_v2/1e18c4a6-a30b-4136-aaa7-86ad0993958e.svg'
+      });
+    </script>
+  </body>
+</html>

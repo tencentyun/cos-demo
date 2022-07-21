@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>COS 音视频</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5/dist/hls.min.js"></script>
+    <style>
+      html, body{
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="dplayer" style="width: 100%; height:450px"></div>
+    <script src="https://cdn.jsdelivr.net/npm/dplayer@1.26.0/dist/DPlayer.min.js"></script>
+    <script>
+      const dp = new DPlayer({
+        container: document.getElementById('dplayer'),
+        // 关于 pm3u8 详情请查看相关文档：https://cloud.tencent.com/document/product/436/73189
+        video: {
+          url: 'https://cos-video-private-1258344699.cos.ap-guangzhou.myqcloud.com/hls/test.m3u8?ci-process=pm3u8&expires=3600&q-sign-algorithm=sha1&q-ak=AKIDRhjX4KK2Uq31jCVheMp1ziV3LNCk0zg7&q-sign-time=1658301190;1973661190&q-key-time=1658301190;1973661190&q-header-list=&q-url-param-list=&q-signature=a0fc3e08b7827c391031d8357ba40787d12619e6',
+        },
+      });
+    </script>
+  </body>
+</html>

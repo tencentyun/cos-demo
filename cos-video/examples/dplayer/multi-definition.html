@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>COS 音视频</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5/dist/hls.min.js"></script>
+    <style>
+      html, body{
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="dplayer" style="width: 100%; height:450px"></div>
+    <script src="https://cdn.jsdelivr.net/npm/dplayer@1.26.0/dist/DPlayer.min.js"></script>
+    <script>
+      const dp = new DPlayer({
+        container: document.getElementById('dplayer'),
+        video: {
+          quality: [
+            {
+                name: '360P',
+                url: 'https://cos-video-1258344699.cos.ap-guangzhou.myqcloud.com/multi-definition/test-360P.m3u8',
+                type: 'hls',
+            },
+            {
+                name: '480P',
+                url: 'https://cos-video-1258344699.cos.ap-guangzhou.myqcloud.com/multi-definition/test-480P.m3u8',
+                type: 'hls',
+            },
+            {
+                name: '720P',
+                url: 'https://cos-video-1258344699.cos.ap-guangzhou.myqcloud.com/multi-definition/test-720P.m3u8',
+                type: 'hls',
+            },
+            {
+                name: '1080P',
+                url: 'https://cos-video-1258344699.cos.ap-guangzhou.myqcloud.com/multi-definition/test-1080P.m3u8',
+                type: 'hls',
+            },
+            {
+                name: '2K',
+                url: 'https://cos-video-1258344699.cos.ap-guangzhou.myqcloud.com/multi-definition/test-2K.m3u8',
+                type: 'hls',
+            },
+          ],
+          defaultQuality: 0,
+        },
+      });
+    </script>
+  </body>
+</html>
