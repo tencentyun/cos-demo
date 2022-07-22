@@ -32,7 +32,7 @@
 
 ## Usage
 ### TcPlayer
-```
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,7 +80,7 @@
 ```
 
 ### DPlayer
-```
+```html
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -113,7 +113,7 @@
 ```
 
 ### VideojsPlayer
-```
+```html
 <!DOCTYPE html>
 <html lang="en">
   <head>
