@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>自定义标题</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+            height: 100%;
+
+            touch-action: manipulation;
+        }
+
+        iframe {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+<div class="app" style="height: 100vh;width: 100%;"></div>
+<script src="https://cdn.bootcss.com/babel-core/5.8.35/browser.min.js"></script>
+<script src="https://cdn.bootcss.com/babel-core/5.8.35/browser-polyfill.min.js"></script>
+<script src="../src/base64.js"></script>
+<script src="../src/sdk-v0.2.1.js"></script>
+<script src="./request.js"></script>
+
+<script type="text/babel">
+    window.onload = async function() {
+        // objectUrl：输入cos文件地址
+        const objectUrl = 'https://test-125XXXXXXX.cos.ap-chongqing.myqcloud.com/test.docx';
+
+        // 定义文档预览请求参数
+        const params = {
+            copyable: 0,
+            htmlwaterword: Base64.encodeUrl('test'),
+            htmlfillstyle: Base64.encodeUrl('#006eff'),
+            htmlfront: Base64.encodeUrl('bold 10px Serif'),
+            htmlrotate: 30,
+            htmlhorizontal: 100,
+            htmlvertical: 40,
+            tokenuid: 'test-doc',
+        }
+
+        // 请求服务端接口获取sign,传入cos文件地址与过期时间
+        const signRes = JSON.parse(await REQUEST('http://127.0.0.1:3000/getSign', 'get', { objectUrl, exp: 10 * 60 }));
+        const sign = signRes.data.sign || '';
+
+        // 通过SDK获取在线文档预览地址
+        const info = await COSDocPreviewSDK.getPreviewUrlAndToken({
+            objectUrl,
+            // 如果预览文件是私有的，则需要携带访问凭证
+            credentials: {
+                authorization: sign,
+            },
+            ...params,
+        })
+
+        // 定义refreshToken方法，请求服务端refreshToken接口获取 Token
+        const refreshToken = async () => {
+            console.log('refreshToken：-----------------refresh token', new Date());
+
+            const tokenRes = JSON.parse(await REQUEST('http://127.0.0.1:3000/refreshToken', 'get', { objectUrl, sign, ...params }));
+
+            const tokenObj = {
+                token: tokenRes.data.Token || '',
+                timeout: 10 * 60 * 1000 //设置token过期时间
+            }
+            return  tokenObj;
+        }
+
+        // 初始化预览
+        const demo = COSDocPreviewSDK.config({
+            mount: document.querySelector('.app'),
+            url: info.PreviewUrl,
+            mode: 'normal',
+            commonOptions: {
+                isShowHeader: false,
+                isShowTopArea: false
+            },
+            refreshToken //将refreshToken作为参数传递
+        });
+
+        // 初始传入token与过期时间
+        demo.setToken({
+            token: info.Token,
+            timeout: 10 * 60 * 1000
+        })
+
+        console.log(demo)
+
+        demo.on('fileOpen', function(data) {
+            console.log('打开成功');
+            test();
+        });
+
+        const test = async () => {
+            await demo.ready();
+            console.log('demo ready');
+
+            testDoc()
+        }
+
+        const testDoc = async () => {
+            const app = demo.WordApplication()
+            const { Enum } = app
+
+            let totalPages = await app.ActiveDocument.Range.Information(Enum.WdInformation.wdNumberOfPagesInDocument)
+            console.log("一共", totalPages.PagesCount, "页")
+
+            setTimeout(function () {
+                if (totalPages.End) {
+                    console.log("加载完了！一共", totalPages.PagesCount, "页")
+                } else {
+                    console.log('没有加载完')
+                }
+            }, 30000)
+
+            //获取当前页
+            const currentPage = await app.ActiveDocument.Selection.Information(Enum.WdInformation.wdActiveEndPageNumber)
+            console.log('当前页面: ' + currentPage)
+        }
+    }
+
+</script>
+</body>
+</html>
