@@ -64,9 +64,9 @@ const camSafeUrlEncode = function (str) {
 }
 
 const obj2str = function (obj, lowerCaseKey) {
-    var i, key, val;
-    var list = [];
-    var keyList = getObjectKeys(obj);
+    let i, key, val;
+    const list = [];
+    const keyList = getObjectKeys(obj);
     for (i = 0; i < keyList.length; i++) {
         key = keyList[i];
         val = (obj[key] === undefined || obj[key] === null) ? '' : ('' + obj[key]);
