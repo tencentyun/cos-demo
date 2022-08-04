@@ -11,6 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PlayerDetailViewController : UIViewController
 @property (nonatomic,strong)NSString * titleString;
+@property (nonatomic,strong)NSString * descString;
 @property(nonatomic,strong)NSString * videoLink;
 @end
 

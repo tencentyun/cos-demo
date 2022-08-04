@@ -2,6 +2,7 @@
 target 'QCloudCIToolBox' do
   use_frameworks!
   
+  pod 'SJVideoPlayer'
   pod 'TXLiteAVSDK_Player'
   pod 'SuperPlayer'
   pod 'SDWebImage'

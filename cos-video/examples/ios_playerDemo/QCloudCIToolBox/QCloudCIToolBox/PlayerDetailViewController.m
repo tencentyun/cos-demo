@@ -42,7 +42,7 @@
     self.title = self.titleString;
     self.navigationController.navigationBar.tintColor = [UIColor blackColor];
     self.inputVideoLink.text = self.videoLink;
-    self.labDesc.text = self.titleString;
+    self.labDesc.text = self.descString;
     
     if ([self.titleString isEqualToString:@"切换多清晰度"]) {
         [self.segment setSelectedSegmentIndex:2];
