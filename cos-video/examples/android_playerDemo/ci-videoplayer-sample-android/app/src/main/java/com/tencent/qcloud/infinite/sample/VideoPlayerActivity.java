@@ -27,6 +27,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
@@ -41,10 +42,12 @@ import com.tencent.qcloud.infinite.sample.player.TXPlayerFragment;
 public class VideoPlayerActivity extends BaseActivity {
     public static final String EXTRA_URL = "extra_url";
     public static final String EXTRA_TIP = "extra_tip";
+    public static final String EXTRA_TAG = "extra_tag";
 
     private ViewPager2 viewPager;
     private String url;
     private String tip;
+    private String tag;
     private EditText etUrl;
 
     private ViewPager2.OnPageChangeCallback onPageChangeCallback = null;
@@ -56,6 +59,12 @@ public class VideoPlayerActivity extends BaseActivity {
 
         url = getIntent().getStringExtra(EXTRA_URL);
         tip = getIntent().getStringExtra(EXTRA_TIP);
+        tag = getIntent().getStringExtra(EXTRA_TAG);
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle(tag);
+        }
 
         etUrl = findViewById(R.id.etUrl);
         etUrl.setText(url);
@@ -118,14 +127,14 @@ public class VideoPlayerActivity extends BaseActivity {
     }
 
     public boolean isCoverImage(){
-        return "封面图".equals(tip);
+        return "封面图".equals(tag);
     }
 
     public boolean isSwitchResolution(){
-        return "切换清晰度".equals(tip);
+        return "切换清晰度".equals(tag);
     }
 
     public boolean isDASH(){
-        return "DASH".equals(tip);
+        return "DASH".equals(tag);
     }
 }
