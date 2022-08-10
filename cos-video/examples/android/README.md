@@ -26,7 +26,7 @@
 - ✨ 支持设置动态水印
 
 ## Usage
-#### 以下为部分代码，可运行的完整代码为[android_playerDemo](https://github.com/tencentyun/cos-demo/tree/main/cos-video/examples/android_playerDemo)
+#### 以下为部分代码，可运行的完整代码为[sample-android](https://github.com/tencentyun/cos-demo/tree/main/cos-video/examples/android/ci-videoplayer-sample-android)
 ### [ExoPlayer](https://exoplayer.dev/)
 ```
 // 创建播放器
@@ -206,4 +206,4 @@ mPlayerView.onDestroy();
 ```
 
 ## More
-更多示例请查看 [android_playerDemo](https://github.com/tencentyun/cos-demo/tree/main/cos-video/examples/android_playerDemo)
+更多示例请查看 [sample-android](https://github.com/tencentyun/cos-demo/tree/main/cos-video/examples/android/ci-videoplayer-sample-android)
