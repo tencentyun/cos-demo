@@ -1,4 +1,4 @@
-// 临时token续期服务例子
+// token续期服务例子
 const express = require('express');
 const request = require('request');
 const util = require('./util');
