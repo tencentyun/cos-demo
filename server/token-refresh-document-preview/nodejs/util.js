@@ -1,4 +1,4 @@
-const CryptoJS = require('./crypto');
+const crypto = require('crypto');
 
 const isArray = function(arr) {
     return arr instanceof Array;
@@ -127,16 +127,16 @@ const getAuth = function (opt) {
 
     // 签名算法说明文档：https://www.qcloud.com/document/product/436/7778
     // 步骤一：计算 SignKey
-    const signKey = CryptoJS.HmacSHA1(qKeyTime, SecretKey).toString();
+    const signKey = crypto.createHmac('sha1', SecretKey).update(qKeyTime).digest('hex');
 
     // 步骤二：构成 FormatString
     const formatString = [method, pathname, obj2str(queryParams, true), obj2str(headers, true), ''].join('\n');
 
     // 步骤三：计算 StringToSign
-    const stringToSign = ['sha1', qSignTime, CryptoJS.SHA1(formatString).toString(), ''].join('\n');
+    const stringToSign = ['sha1', qSignTime, crypto.createHash('sha1').update(formatString).digest('hex'), ''].join('\n');
 
     // 步骤四：计算 Signature
-    const qSignature = CryptoJS.HmacSHA1(stringToSign, signKey).toString();
+    const qSignature = crypto.createHmac('sha1', signKey).update(stringToSign).digest('hex');
 
     // 步骤五：构造 Authorization
     const authorization = [
@@ -152,44 +152,6 @@ const getAuth = function (opt) {
     return authorization;
 
 }
-
-const getPreviewUrlAndToken = function getPreviewUrlAndToken(opts) {
-    const { copyable, tokenuid, htmlwaterword, htmlfillstyle, htmlfront, htmlrotate, htmlhorizontal, htmlvertical } = opts;
-
-    // 获取签名
-    const auth = getAuth(opts);
-    return new Promise((resolve, reject) => {
-        REQUEST({
-            method: 'GET',
-            url: ''.concat(opts.objectUrl, '?ci-process=doc-preview&dstType=html&weboffice_url=1'),
-            qs: {
-                sign: auth,
-                tokenuid,
-                copyable,
-                htmlwaterword,
-                htmlfillstyle,
-                htmlfront,
-                htmlrotate,
-                htmlhorizontal,
-                htmlvertical,
-            },
-            dataType: 'json',
-        }, (res) => {
-            if (res.error) {
-                console.error(res.error);
-                reject(res.error);
-                return;
-            }
-
-            // IE返回的是string
-            if (typeof res.body === 'string') {
-                res.body = JSON.parse(res.body);
-            }
-
-            resolve(res.body);
-        });
-    });
-};
 
 const stringifyPrimitive = function (v) {
     switch (typeof v ) {
@@ -235,7 +197,6 @@ const queryStringify = function (obj, sep, eq, name) {
 
 const util = {
     getAuth,
-    getPreviewUrlAndToken,
     queryStringify,
     camSafeUrlEncode
 };
