@@ -9,7 +9,7 @@ const config = {
     secretKey: "xxxxxx",
 }
 
-const signExp = 10 * 60; // 签名过期时间
+const signExp = 10 * 60; // 签名过期时间，例如此处为10分钟
 
 // 创建token续期服务和用于调试的静态服务
 const app = express();
@@ -32,12 +32,12 @@ app.all('/getSign', function (req, res, next) {
 
     // 如果需要返回跨域头
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:63342'); // 这里修改允许跨域访问的网站
+    res.setHeader('Access-Control-Allow-Origin', 'http://your.client.com:port'); // 这里修改允许跨域访问的网站
     res.setHeader('Access-Control-Allow-Headers', 'origin,accept,content-type');
 
     // 返回签名信息
     res.send({
-		code: 0,
+        code: 0,
         data: {
             sign
         },
@@ -53,15 +53,7 @@ app.all('/refreshToken', function (req, res, next) {
     const { query: { Bucket, Region, filePath, tokenuid }} = req;
 
     // 根据 Bucket, Region, filePath 拼接文件完整路径
-    const pathname = filePath.substring(1);
-    const encodeKey = util.camSafeUrlEncode(pathname).replace(/%2F/g, "/");
-    let domain = "";
-    if (Region.includes("cos-cdc")) {
-        domain = `${Bucket}.${Region}.myqcloud.com`;
-    } else {
-        domain = `${Bucket}.cos.${Region}.myqcloud.com`;
-    }
-    const objectUrl = "https://" + domain + "/" + encodeKey;
+    const objectUrl = `https://${Bucket}.cos.${Region}.myqcloud.com${filePath}`;
 
     // 计算签名需要的参数
     const opt = {
@@ -95,7 +87,7 @@ app.all('/refreshToken', function (req, res, next) {
 
         // 如果需要返回跨域头
         res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:63342'); // 这里修改允许跨域访问的网站
+        res.setHeader('Access-Control-Allow-Origin', 'http://your.client.com:port'); // 这里修改允许跨域访问的网站
         res.setHeader('Access-Control-Allow-Headers', 'origin,accept,content-type');
 
         // 返回 Token 与 Token过期时间戳
@@ -107,10 +99,6 @@ app.all('/refreshToken', function (req, res, next) {
             },
         });
     });
-});
-
-app.all('*', function (req, res, next) {
-    res.send({code: -1, message: '404 Not Found'});
 });
 
 // 启动服务端token续期服务

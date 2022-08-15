@@ -41,14 +41,7 @@
         const tokenuid = "test-doc"; // 是否获取Token
 
         // 根据 Bucket, Region, filePath 拼接文件完整路径
-        const encodeKey = camSafeUrlEncode(filePath.substring(1)).replace(/%2F/g, "/");
-        let domain = "";
-        if (Region.includes("cos-cdc")) {
-            domain = `${Bucket}.${Region}.myqcloud.com`;
-        } else {
-            domain = `${Bucket}.cos.${Region}.myqcloud.com`;
-        }
-        const objectUrl = "https://" + domain + "/" + encodeKey;
+        const objectUrl = `https://${Bucket}.cos.${Region}.myqcloud.com${filePath}`;
 
         // 定义文档预览请求参数
         const params = {
@@ -62,13 +55,14 @@
             tokenuid, // 根据传入的tokenuid、文件信息等生成Token，返回Token和有效期；如果不传则不会返回Token信息
         }
 
+        // 步骤1 获取签名sign
         // 传入cos文件路径，服务端计算签名，将签名作为返回结果，格式如下：{code: 0, data: { sign }}
         // 参考服务端示例：https://github.com/tencentyun/cos-demo/server/token-refresh-document-preview/
         const signRes = JSON.parse(await REQUEST('http://127.0.0.1:3000/getSign', 'get', { filePath }));
         // 从返回结果中拿到签名
         const sign = signRes.data.sign || '';
 
-        // 通过SDK获取 在线文档预览地址 与 Token信息
+        // 步骤2 通过SDK获取 在线文档预览地址 与 Token信息
         const info = await COSDocPreviewSDK.getPreviewUrlAndToken({
             objectUrl,
             // 如果预览文件是私有的，则需要携带访问凭证
@@ -79,7 +73,7 @@
         })
         const { PreviewUrl, Token, TokenExpireTime } = info;
 
-        // 定义refreshToken方法，请求服务端refreshToken接口获取 Token
+        // 步骤3 定义refreshToken方法，请求服务端refreshToken接口获取 Token
         const refreshToken = async () => {
             console.log('refreshToken：-----------------refresh token', new Date());
 
@@ -99,7 +93,7 @@
             return  tokenObj;
         }
 
-        // 初始化预览
+        // 步骤4 初始化预览
         const demo = COSDocPreviewSDK.config({
             mount: document.querySelector('.app'),
             url: PreviewUrl,
@@ -114,12 +108,13 @@
         // 根据 Token过期时间戳(精确到秒) 计算 Token过期时间(毫秒为单位)
         const timeout = (TokenExpireTime - Math.round(new Date().getTime() / 1000)) * 1000;
 
-        // 初始传入 Token 与 Token过期时间
+        // 步骤5 初始传入 Token 与 Token过期时间
         demo.setToken({
             token: Token,
             timeout
         })
 
+        // 步骤6 打开文档
         demo.on('fileOpen', function(data) {
             console.log('打开成功');
             test();
@@ -129,16 +124,6 @@
             await demo.ready();
             console.log('demo ready');
         }
-    }
-
-    // 对更多字符编码的 url encode 格式
-    const camSafeUrlEncode = function (str) {
-        return encodeURIComponent(str)
-            .replace(/!/g, '%21')
-            .replace(/'/g, '%27')
-            .replace(/\(/g, '%28')
-            .replace(/\)/g, '%29')
-            .replace(/\*/g, '%2A');
     }
 
     // Promise封装原生XMLHttpRequest，请求参数为请求url、请求方法、请求数据
