@@ -20,7 +20,7 @@
 
 ## Feature
 
-- 🚀 支持 web、android、ios 多端播放
+- 🚀 支持 Web、Android、iOS 多端播放
 - 💡 支持播放 MP4 格式视频
 - ⚡️ 支持播放 M3U8 格式视频
 - 🛠️ 支持播放 PM3U8(私有M3U8) 视频。关于 PM3U8，详情请查看[相关文档](https://cloud.tencent.com/document/product/436/73189)
