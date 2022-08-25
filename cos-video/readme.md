@@ -30,6 +30,10 @@
 - 📚 支持切换视频清晰度
 - ✨ 支持设置动态水印
 - 📰 支持设置 LOGO
+- 🎈 支持设置进度预览图
+- ⛱️ 支持设置字幕
+- 🎊 支持设置多语言
+- 💰 支持设置贴片广告
 
 ## Web
 ### [TcPlayer](https://cloud.tencent.com/document/product/881/30818)
