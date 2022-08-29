@@ -5,9 +5,8 @@
     "window": {
         "backgroundTextStyle": "light",
         "navigationBarBackgroundColor": "#fff",
-        "navigationBarTitleText": "Weixin",
+        "navigationBarTitleText": "COS文档预览",
         "navigationBarTextStyle": "black"
     },
-    "style": "v2",
-    "sitemapLocation": "sitemap.json"
+    "style": "v2"
 }
