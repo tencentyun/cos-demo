@@ -1,0 +1,39 @@
+/**index.wxss**/
+.img-preview__wrapper {
+    width: 100%;
+    flex-grow: 1;
+    box-sizing: border-box;
+    padding: 16px;
+    overflow-y: auto;
+}
+.img-preview__intro {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 22px;
+}
+.img-preview__tips {
+    margin-top: 5px;
+    font-size: 12px;
+    line-height: 22px;
+}
+.img-preview__content {
+    margin: 16px 0 0 0;
+    padding: 8px;
+    background-color: #F4F5F9;
+    position: relative;
+}
+.img-preview__image {
+    width: 100%;
+}
+.img-preview__number {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translate(-50%, 0);
+    height: 24px;
+    padding: 0 12px;
+    background-color: #fff;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 2;
+}
