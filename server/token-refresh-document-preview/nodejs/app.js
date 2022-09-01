@@ -54,6 +54,7 @@ app.all('/refreshToken', function (req, res, next) {
 
     // 根据 Bucket, Region, filePath 拼接文件完整路径
     const objectUrl = `https://${Bucket}.cos.${Region}.myqcloud.com${filePath}`;
+    const pathname = filePath.substring(1);
 
     // 计算签名需要的参数
     const opt = {
