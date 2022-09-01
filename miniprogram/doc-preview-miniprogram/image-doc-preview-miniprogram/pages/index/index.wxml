@@ -1,21 +1,28 @@
 <!--index.wxml-->
 <view class="img-preview__wrapper">
-    <view class="img-preview__intro">
-        支持word、powerpoint、pdf等多种类型的文件生成图片格式的预览，可以解决文档内容的页面展示问题，满足 PC、APP 等多端的文档在线浏览需求。
-    </view>
-    <view class="img-preview__tips">
-        Tips：左右滑动可切换页码查看文档图片
-    </view>
-    <view class="img-preview__content">
-        <swiper style="height: {{swiperHeight}}" current="{{currentPage}}" bindchange="currentPageChange">
-            <block wx:for="{{swiperItems}}" wx:key="*this">
-                <swiper-item>
-                    <image class="img-preview__image" src="{{item.imageUrl}}" mode="{{item.imageMode}}" bindload="imgLoad"></image>
-                </swiper-item>
-            </block>
-        </swiper>
-        <view class="img-preview__number">
-            页码 {{swiperItems? currentPage + 1 :'-'}}/{{ swiperItems? totalPage : '-' }}
+    <view wx:if="{{isError}}" class="img-preview__intro">
+        <view>
+            请确认是否在微信公众平台(https://mp.weixin.qq.com)配置了对应的 downloadFile 合法域名 或者 文档是否为私有读权限，如为私有读则需要签名
         </view>
     </view>
+    <block wx:else>
+        <view class="img-preview__intro">
+            支持word、powerpoint、pdf等多种类型的文件生成图片格式的预览，可以解决文档内容的页面展示问题，满足 PC、APP 等多端的文档在线浏览需求。
+        </view>
+        <view class="img-preview__tips">
+            Tips：左右滑动可切换页码查看文档图片
+        </view>
+        <view class="img-preview__content">
+            <swiper style="height: {{swiperHeight}}" current="{{currentPage}}" bindchange="currentPageChange">
+                <block wx:for="{{swiperItems}}" wx:key="*this">
+                    <swiper-item>
+                        <image class="img-preview__image" src="{{item.imageUrl}}" mode="{{item.imageMode}}" bindload="imgLoad"></image>
+                    </swiper-item>
+                </block>
+            </swiper>
+            <view class="img-preview__number">
+                页码 {{swiperItems? currentPage + 1 :'-'}}/{{ swiperItems? totalPage : '-' }}
+            </view>
+        </view>
+    </block>
 </view>

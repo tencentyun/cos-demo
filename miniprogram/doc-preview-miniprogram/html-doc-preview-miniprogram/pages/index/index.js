@@ -1,5 +1,5 @@
 // index.js
-const Bucket = 'ci-h5-demo-1258125638'; // 存储桶名称
+const Bucket = 'bucketName-125XXXXXXX'; // 存储桶名称
 const Region = 'ap-chengdu'; // 地域
 const filePath = 'default_file/defaultDoc.pdf'; // 预览文件路径
 

@@ -1,5 +1,5 @@
 // index.js
-const Bucket = 'ci-h5-demo-1258125638'; // 存储桶名称
+const Bucket = 'bucketName-125XXXXXXX'; // 存储桶名称
 const Region = 'ap-chengdu'; // 地域
 const filePath = 'default_file/defaultDoc.pdf'; // 预览文件路径
 
@@ -14,6 +14,7 @@ Page({
         totalPage: 1, // 总页数
         swiperHeight: 150, // 轮播元素高度
         isLoading: false, // 是否正在请求图片
+        isError: false, // 页面加载是否出错
     },
     onLoad() {
         // 页面加载时调用 docImagePreview 方法，进行文档转图片预览
@@ -23,7 +24,7 @@ Page({
         const { currentPage, pageSize, isLoading } = this.data;
         // 如果正在请求图片，直接return
         if (isLoading === true) return;
-        this.isLoading = true; // 设置状态：开始请求图片
+        this.setData({ isLoading: true }); // 设置状态：开始请求图片
         // preViewDoc 处理结果格式为 { totalPage, pics }，其中 totalPage 代表总页数、pics 为文档图片数组，存储有图片临时路径
         this.preViewDoc(currentPage, pageSize).then(data => {
             // 从结果中取出总页数 totalPage 和图片数组 pics
@@ -40,8 +41,18 @@ Page({
                 totalPage,
                 pageSize,
                 swiperItems: swiperItems.filter(item => item.imageUrl), // 过滤临时图片地址为空的情况
+                isLoading: false, // 设置状态：图片请求结束
             });
-            this.isLoading = false; // 设置状态：图片请求结束
+            if(this.data.swiperItems === null) {
+                this.setData({
+                    isError: true,
+                });
+            }
+        }).catch((err) => {
+            this.setData({
+                isError: true,
+                isLoading: false, // 设置状态：图片请求结束
+            });
         });
       },
 
@@ -93,7 +104,7 @@ Page({
         const url = `${objectUrl}?ci-process=doc-preview&page=${currentPage}&dstType=png&ImageParams=watermark/2/text/Q09T5paH5qGj6aKE6KeI/fill/I0RDRENEQw/fontsize/20/batch/1/degree/45`;
         return new Promise((resolve, reject) => {
             // 下载文档图片资源到本地，直接发起一个 HTTPS GET 请求，返回图片的本地临时路径
-            // 注意：需要在微信公众平台 https://mp.weixin.qq.com/ 中的服务器域名下配置 downloadFile 合法域名，例如本示例中需要配置 https://ci-h5-demo-1258125638.cos.ap-chengdu.myqcloud.com
+            // 注意：需要在微信公众平台 https://mp.weixin.qq.com/ 中的服务器域名下配置 downloadFile 合法域名，例如本示例中需要配置 https://bucketName-125XXXXXXX.cos.ap-chengdu.myqcloud.com
             wx.downloadFile({
                 url,
                 method: "GET",
@@ -105,7 +116,7 @@ Page({
                 },
                 fail(err) {
                     reject(err);
-                },
+                }
             });
         });
     },
@@ -116,8 +127,8 @@ Page({
         if (swiperItems == null) return;
         const swiperLength = swiperItems.length;
         // 轮播图片数量少于总页数、当前未在请求图片状态下 才会继续
-        if (swiperLength - current < 5 && swiperLength < totalPage && this.isLoading == false) {
-            this.isLoading = true; // 设置状态：开始请求图片
+        if (swiperLength - current < 5 && swiperLength < totalPage && this.data.isLoading == false) {
+            this.setData({ isLoading: true }); // 设置状态：开始请求图片
              // preViewDoc 处理结果格式为 { totalPage, pics }，其中 totalPage 代表总页数、pics 为文档图片数组，存储有图片临时路径
             this.preViewDoc(swiperLength + 1, pageSize).then(data => {
                 // 从结果中取出总页数 totalPage 和图片数组 pics
@@ -133,8 +144,8 @@ Page({
                 this.setData({
                     swiperItems: newPages,
                     pageSize: pageS,
+                    isLoading: false, // 设置状态：请求图片结束
                 });
-                this.isLoading = false; // 设置状态：请求图片结束
             });
         }
       },
