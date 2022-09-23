@@ -29,7 +29,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 32
         versionCode 1
-        versionName "1.0"
+        versionName "1.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -83,7 +83,7 @@ dependencies {
 //    implementation 'com.tencent.liteav:LiteAVSDK_Professional:latest.release'
 
     //腾讯云超级播放器
-    implementation 'com.tencent.liteav:LiteAVSDK_Player:latest.release'
+    implementation 'com.tencent.liteav:LiteAVSDK_Player:10.5.0.11177'
     implementation project(':superplayerkit')
     // 超级播放器弹幕集成的第三方库
     implementation 'com.github.ctiao:DanmakuFlameMaster:0.5.3'
