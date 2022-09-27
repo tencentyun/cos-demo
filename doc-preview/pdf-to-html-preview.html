@@ -31,26 +31,23 @@
     <div class="app" style="height: 100vh;width: 100%;"></div>
     <script src="https://cdn.bootcss.com/babel-core/5.8.35/browser.min.js"></script>
     <script src="https://cdn.bootcss.com/babel-core/5.8.35/browser-polyfill.min.js"></script>
-    <script src="./src/base64.js"></script>
-    <script src="./src/sdk-v0.2.1.js"></script>
+    <script src="src/base64.js"></script>
+    <script src="src/sdk-v0.2.1.js"></script>
 
     <script type="text/babel">
 
         window.onload = async function () {
             var url = await COSDocPreviewSDK.getPreviewUrl({
                 // objectUrl：输入cos文件地址
-                objectUrl: 'https://test-125XXXXXXX.cos.ap-chongqing.myqcloud.com/test.pdf',
+                objectUrl: 'https://ci-h5-demo-1258125638.cos.ap-chengdu.myqcloud.com/users/source.l7im9dco.pdf',
                 copyable: 0,
-                htmlwaterword: Base64.encodeUrl('test'),
-                htmlfillstyle: Base64.encodeUrl('#006eff'),
+                htmlwaterword: Base64.encodeUrl('文字水印'),
+                // htmlfillstyle: Base64.encodeUrl('#006eff'),
                 htmlfillstyle: Base64.encodeUrl('rgba(255,0,0,0.5)'),
                 htmlfront: Base64.encodeUrl('bold 10px Serif'),
                 htmlrotate: 30,
                 htmlhorizontal: 100,
                 htmlvertical: 40,
-                credentials: {      // 如果预览文件是私有的，则需要携带访问凭证。
-                    authorization: 'q-sign-algorithmxxxxxxxxxxxxxxx',
-                }
             })
 
             const demo = COSDocPreviewSDK.config({

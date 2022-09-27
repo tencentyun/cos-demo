@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ocr-demo</title>
-  <script src="../../lib/cos-js-sdk-v5.min.js"></script>
+  <title>face-demo</title>
+  <script src="../common/cos-js-sdk-v5.min.js"></script>
   <style>
     html,body {
       margin: 0;
@@ -18,7 +18,7 @@
       font-size: 12px;
       color: #ff0000;
     }
-    .ocr-area {
+    .face-area {
       margin: 20px;
     }
     .img-area {
@@ -36,9 +36,9 @@
       <input type="file" id="file-selector"/>
       <span id="err-msg"></span>
     </div>
-    <div class="ocr-area">
-      <p>OCR分析结果：</p>
-      <ul id="ocr-results"></ul>
+    <div class="face-area">
+      <p>人脸检测分析结果：</p>
+      <ul id="face-results"></ul>
     </div>
     <div class="img-area">
       <img src="" id="sourceFile"/>
@@ -74,13 +74,13 @@
     let fileSelectorEle = document.getElementById('file-selector'),
         errMsgEle = document.getElementById('err-msg'),
         sourceFileEle = document.getElementById('sourceFile'),
-        ocrResultsEle = document.getElementById('ocr-results');
+        faceResultsEle = document.getElementById('face-results');
 
     fileSelectorEle.onchange = function(e) {
 
       errMsgEle.innerHTML = '';
       sourceFileEle.setAttribute('src', '');
-      ocrResultsEle.innerHTML = '';
+      faceResultsEle.innerHTML = '';
 
       let file = this.files[0];      
 
@@ -112,27 +112,29 @@
         }        
 
         sourceFileEle.setAttribute('src', '//'+data.Location);
-        ocrResultsEle.innerHTML = '<li>分析中...</li>';
+        faceResultsEle.innerHTML = '<li>分析中...</li>';
 
         cos.request({
           ...basicParams,
-          // OCR请求参数配置可参考 https://cloud.tencent.com/document/product/436/64324
+          // 人脸检测请求参数配置可参考 https://cloud.tencent.com/document/product/436/64315
           Query: {
-            'ci-process': 'OCR',
-            'type': 'general'                
+            'ci-process': 'DetectFace',  
+            'max-face-num': 1    
           }              
         }, (err, data) => {
           
           if(err) {
-            errMsgEle.innerHTML = 'OCR分析失败，请在console查看报错信息';
+            errMsgEle.innerHTML = 'face检测失败，请在console查看报错信息';
             console.log(JSON.stringify(err));
             return;
           }
 
           let resp = data.Response || {};
-          let results = resp.TextDetections || [];
+          let results = resp.FaceInfos || [];
 
-          ocrResultsEle.innerHTML = results.map(item => '<li>' + item.DetectedText + '</li>').join('');
+          faceResultsEle.innerHTML = results.map((item, index) => {
+            return `<li>人脸${index+1} 位置：x坐标 ${item.X}，y坐标 ${item.Y}，宽度 ${item.Width}，高度 ${item.Height}</li>`
+          }).join('');
 
         })
 

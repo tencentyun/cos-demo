@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>自定义标题</title>
     <style>
         * {
             box-sizing: border-box;
@@ -31,15 +32,15 @@
     <div class="app" style="height: 100vh;width: 100%;"></div>
     <script src="https://cdn.bootcss.com/babel-core/5.8.35/browser.min.js"></script>
     <script src="https://cdn.bootcss.com/babel-core/5.8.35/browser-polyfill.min.js"></script>
-    <script src="./src/base64.js"></script>
-    <script src="./src/sdk-v0.2.1.js"></script>
+    <script src="src/base64.js"></script>
+    <script src="src/sdk-v0.2.1.js"></script>
 
     <script type="text/babel">
 
         window.onload = async function () {
             var url = await COSDocPreviewSDK.getPreviewUrl({
                 // objectUrl：输入cos文件地址
-                objectUrl: 'https://test-125XXXXXXX.cos.ap-chongqing.myqcloud.com/test.xls',
+                objectUrl: 'https://test-125XXXXXXX.cos.ap-chongqing.myqcloud.com/test.docx',
                 copyable: 0,
                 htmlwaterword: Base64.encodeUrl('test'),
                 htmlfillstyle: Base64.encodeUrl('#006eff'),
@@ -72,14 +73,15 @@
                 await demo.ready();
                 console.log('demo ready');
 
-                testXls();
+                testDoc()
             }
 
-            const testXls = async () => {
-                const app = demo.ExcelApplication()
-                // 获取当前sheet名称
-                const name = await app.ActiveSheet.Name
-                console.log('ActiveSheet:', name)
+            const testDoc = async () => {
+                const app = demo.WordApplication()
+                const { Enum } = app
+                // 获取当前页
+                const currentPage = await app.ActiveDocument.Selection.Information(Enum.WdInformation.wdActiveEndPageNumber)
+                console.log('当前页面: ' + currentPage)
             }
         }
 
