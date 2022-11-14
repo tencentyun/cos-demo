@@ -20,7 +20,7 @@
 
 <body>
     <div id="app">
-        <textarea id="content" placeholder="输入COS图片地址，如https://example-1250000000.cos.ap-chongqing.myqcloud.com/example.jpg，图片支持格式：PNG、JPG、JPEG" rows="5" cols="50"></textarea>
+        <textarea id="content" placeholder="输入带电商logo的COS图片地址，如https://example-1250000000.cos.ap-chongqing.myqcloud.com/example.jpg，图片支持格式：PNG、JPG、JPEG" rows="5" cols="50"></textarea>
         <div>
             <button id="btn1">LOGO识别</button>
         </div>
@@ -36,7 +36,7 @@
             let url = document.querySelector('#content').value.trim();
 
             if (url === '') {
-                return alert('输入COS图片地址')
+                return alert('输入带电商logo的COS图片地址')
             }
 
             // 请求签名，详情请参见文档 https://cloud.tencent.com/document/product/436/7778
