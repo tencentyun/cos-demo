@@ -18,7 +18,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"万象工具箱";
+    self.title = @"COS 音视频体验馆";
     self.dataArray = @[@"视频播放",@"PM3U8",@"封面图",@"切换多清晰度",@"动态水印"];
     self.urlArray = @[
         @"https://cos-video-1258344699.cos.ap-guangzhou.tencentcos.cn/test.mp4",
