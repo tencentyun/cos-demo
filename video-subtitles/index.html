@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>视频自动添加字幕</title>
+    <!--播放器样式文件-->
+    <link href="https://web.sdk.qcloud.com/player/tcplayer/release/v4.6.0/tcplayer.min.css" rel="stylesheet" />
+    <!--播放器脚本文件-->
+    <script src="https://web.sdk.qcloud.com/player/tcplayer/release/v4.6.0/tcplayer.v4.6.0.min.js"></script>
+    <!--COS SDK-->
+    <script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        padding: 20px;
+      }
+      .tow-box {
+        display: flex;
+      }
+      .tow-box > div {
+        flex: 1;
+        padding: 20px;
+      }
+      #player-container {
+        background-color: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="tow-box">
+        <div>
+          <p>原视频</p>
+          <video id="player-container-left" width="570" height="450" preload="auto" playsinline webkit-playsinline></video>
+        </div>
+        <div>
+          <p>添加字幕</p>
+          <video id="player-container" width="570" height="450" preload="auto" playsinline webkit-playsinline></video>
+        </div>
+      </div>
+      <div style="padding: 20px">
+        <button onclick="postAsrTrack()">进行语音识别</button>
+        <span id="msg-text"></span>
+      </div>
+    </div>
+    <script>
+      // 存储桶配置请在cos控制台获取。https://console.cloud.tencent.com/cos/bucket
+      // 格式参考：Bucket: 'test-1234567890', Region: 'ap-guangzhou'
+      const config = {
+        // 需要替换成您自己的存储桶信息
+        Bucket: 'test-1234567890' /* 存储桶，必须 */,
+        Region: 'ap-guangzhou'/* 存储桶所在地域，必须字段 */,
+        FileName: 'test' /* 文件名 */,
+      };
+      //初始化TCPlayer并设置未添加字幕原视频
+      const leftPlayer = TCPlayer('player-container-left', {});
+      leftPlayer.src(`https://${config.Bucket}.cos.${config.Region}.myqcloud.com/${config.FileName}.mp4`);
+      const msgText = document.querySelector('#msg-text');
+      /*
+      准备工作：
+      1. 在cos控制台创建一个存储桶，可拿到存储桶名称和地域，即Bucket，Region。
+      2. 进入存储桶配置页面，设置对应的跨域规则（简单调试可将来源Origin设置为*）。
+      3. 进入访问管理控制台，获取API密钥，即SecretId，SecretKey。
+      */
+
+      // 注意：以下初始化方式仅供联调测试使用，为了安全起见，请勿在生产环境直接暴露密钥。
+      // 生产环境请参考各语言SDK签名实现。https://cloud.tencent.com/document/product/436/7778#sdk-.E7.AD.BE.E5.90.8D.E5.AE.9E.E7.8E.B0
+
+      // 密钥请在访问管理控制台获取。https://console.cloud.tencent.com/cam/capi
+      const cos = new COS({
+        SecretId:'AKID*****************************',
+        SecretKey: '********************************',
+      });
+
+      function postAsrTrack() {
+        msgText.innerHTML = '';
+
+        const host = config.Bucket + '.ci.' + config.Region + '.myqcloud.com';
+        const url = 'https://' + host + '/asr_jobs';
+        const body = COS.util.json2xml({
+          Request: {
+            Tag: 'SpeechRecognition' /* 创建任务的 Tag：SpeechRecognition ,必须*/,
+            Input: {
+              Object: `${config.FileName}.mp4` /* 需要语音识别的视频文件，存储桶里的路径 */,
+            },
+            Operation: {
+              SpeechRecognition: {
+                EngineModelType: '16k_zh_video' /* 引擎模型类型:16k 音视频领域 ,必须 */,
+                ChannelNum: 1 /* 语音声道数，必须 */,
+                ResTextFormat: 1 /* 识别结果返回形式，必须 */,
+                OutputFileType: 'srt',
+              },
+              Output: {
+                Bucket: config.Bucket /* 	存储结果的存储桶 ,必须 */,
+                Region: config.Region /* 	存储结果存储桶地域 ,必须 */,
+                Object: `${config.FileName}.srt` /* 结果文件的名称 ,必须 */,
+              },
+            },
+            QueueId: '*******************' /* 任务所在的队列 ID ,必须 */,
+          },
+        });
+        cos.request(
+          {
+            Bucket: config.Bucket,
+            Region: config.Region,
+            Method: 'POST',
+            Url: url,
+            Key: '/asr_jobs' /** 固定值，必须 */,
+            ContentType: 'application/xml' /** 固定值，必须 */,
+            Body: body,
+          },
+          (err, data) => {
+            if (err) {
+              msgText.innerHTML = '语音识别失败，请在console查看报错信息';
+              console.log(JSON.stringify(err));
+              return;
+            }
+            const resp = data.Response || {};
+            //调用查询任务
+            queryAsrTrack(resp.JobsDetail.JobId);
+          }
+        );
+      }
+
+      //定时查询语音识别任务执行结果
+      function queryAsrTrack(JobId) {
+        setTimeout(() => {
+          const host = config.Bucket + '.ci.' + config.Region + '.myqcloud.com';
+          const url = 'https://' + host + '/asr_jobs/' + JobId;
+          cos.request(
+            {
+              Bucket: config.Bucket,
+              Region: config.Region,
+              Method: 'GET',
+              Url: url,
+              Key: '/asr_jobs/' + JobId /** 固定值，必须 */,
+              ContentType: 'application/xml' /** 固定值，必须 */,
+            },
+            async (err, data) => {
+              if (err) {
+                msgText.innerHTML = '语音识别任务查询失败，请在console查看报错信息';
+                console.log(JSON.stringify(err));
+                return;
+              }
+              const resp = data.Response || {};
+              //判断语音识别任务是否执行中
+              if (resp.JobsDetail.State !== 'Success') {
+                msgText.innerHTML = '...语音识别任务执行中';
+                queryAsrTrack(JobId);
+                return;
+              }
+              // 任务执行完成 初始化播放器
+              msgText.innerHTML = '语音识别任务完成';
+              // srt文件格式转webvvt格式
+              const vvtUrl = await getWebvvtUrl(`https://${config.Bucket}.cos.${config.Region}.myqcloud.com/${config.FileName}.srt`);
+              //初始化播放器
+              const Player = TCPlayer('player-container', {});
+              // 设置播放url
+              Player.src(`https://${config.Bucket}.cos.${config.Region}.myqcloud.com/${config.FileName}.mp4`);
+
+              Player.on('ready', () => {
+                // 添加字幕文件
+                const subTrack = Player.addRemoteTextTrack(
+                  {
+                    src: vvtUrl, // 字幕文件
+                    kind: 'subtitles',
+                    srclang: 'zh-cn',
+                    label: '中文',
+                    default: 'true',
+                  },
+                  true
+                );
+              });
+            }
+          );
+        }, 2000);
+      }
+
+      // TODO: web播放器字幕文件应为webvvt格式，这里需要对srt文件格式做转换
+      const getWebvvtUrl = url => {
+        return fetch(url)
+          .then(response => response.text())
+          .then(text => {
+            const arr = text.split('\n');
+            text = arr.slice(0, arr.length - 4).join('\n');
+            const vvtText = 'WEBVTT\n' + '\n' + text.replace(/,/g, '.') + '\n';
+            console.log(vvtText);
+            return URL.createObjectURL(new Blob([vvtText]));
+          });
+      };
+    </script>
+  </body>
+</html>
