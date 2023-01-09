@@ -159,7 +159,7 @@
               }
               // 任务执行完成 初始化播放器
               msgText.innerHTML = '语音识别任务完成';
-              // //srt文件格式转webvvt格式，非必须，TCPlayer播放器字幕文件暂只支持webvvt格式
+              // srt文件格式转webvvt格式，非必须，TCPlayer播放器字幕文件暂只支持webvvt格式
               const vvtUrl = await getWebvvtUrl(`https://${config.Bucket}.cos.${config.Region}.myqcloud.com/demo.srt`);
               //初始化播放器
               const Player = TCPlayer('player-container', {});
