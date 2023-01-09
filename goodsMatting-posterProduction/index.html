@@ -53,8 +53,12 @@
       1. 在cos控制台创建一个存储桶，可拿到存储桶名称和地域，即Bucket，Region。
       2. 进入存储桶配置页面，设置对应的跨域规则（简单调试可将来源Origin设置为*）。
       3. 进入访问管理控制台，获取API密钥，即SecretId，SecretKey。
+    
+    /* 商品海报合成步骤：
+    1. 提取商品主体图片
+    2. 创建海报合成任务
+    3. 查询海报合成结果
     */
-
             
     // 注意：以下初始化方式仅供联调测试使用，为了安全起见，请勿在生产环境直接暴露密钥。
     // 生产环境请参考各语言SDK签名实现。https://cloud.tencent.com/document/product/436/7778#sdk-.E7.AD.BE.E5.90.8D.E5.AE.9E.E7.8E.B0
@@ -127,7 +131,7 @@
             return;
           }
           if (data.Response.JobsDetail.State === 'Success') {
-            document.getElementById('targetFile').setAttribute('src', 'https://' + bucketConf.Bucket + '.cos.' + bucketConf.Region + '.myqcloud.com/output/out.jpg');
+            document.getElementById('targetFile').setAttribute('src', 'https://' + bucketConf.Bucket + '.cos.' + bucketConf.Region + '.myqcloud.com/******/***.jpg');
             clearInterval(interval)
           }
         })
