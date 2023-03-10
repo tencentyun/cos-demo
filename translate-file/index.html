@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件翻译</title>
+  <script src="../common/cos-js-sdk-v5.min.js"></script>
+  <style>
+    html,body {
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      padding: 20px;
+    }
+    .button-area {
+      min-width: 100px;
+    }
+    .translate-area {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="button-area">
+      <button id="submit">翻译</button>
+    </div>
+    <div class="translate-area">
+      <p>翻译结果：</p>
+      <div id="translate-progress"></div>
+    </div>
+  </div>
+  <script src="../common/xml2json.js"></script>
+  <script>
+
+    /*
+      准备工作：
+      1. 在cos控制台创建一个存储桶，可拿到存储桶名称和地域，即Bucket，Region。
+      2. 进入存储桶配置页面，设置对应的跨域规则（简单调试可将来源Origin设置为*）。
+      3. 进入访问管理控制台，获取API密钥，即SecretId，SecretKey。
+    */
+
+    // 注意：以下初始化方式仅供联调测试使用，为了安全起见，请勿在生产环境直接暴露密钥。
+    // 生产环境请参考各语言SDK签名实现。https://cloud.tencent.com/document/product/436/7778#sdk-.E7.AD.BE.E5.90.8D.E5.AE.9E.E7.8E.B0
+    // 密钥请在访问管理控制台获取。https://console.cloud.tencent.com/cam/capi
+    const cos = new COS({
+      SecretId: 'AKID*****************************',
+      SecretKey: '********************************'
+    });
+
+    // 存储桶配置请在cos控制台获取。https://console.cloud.tencent.com/cos/bucket
+    // 格式参考：Bucket: 'abc-1250000000', Region: 'ap-shanghai'
+    // 源文档相关配置
+    const InputConf = {
+      Bucket: '***-***********',
+      Region: '**-*****',
+      FileName: 'input.pdf',
+    };
+    // 翻译结果文档相关配置，注意：需与源文档所在存储桶为同地域
+    const OutputConf = {
+      Bucket: '***-***********',
+      Region: '**-*****',
+      FileName: 'output.pdf',
+    };
+
+    const host = InputConf.Bucket + '.ci.' + InputConf.Region + '.myqcloud.com';
+
+    const submitButtonEle = document.getElementById('submit');
+    const translateProgressEle = document.getElementById('translate-progress');
+    translateProgressEle.innerHTML = "待翻译";
+
+    submitButtonEle.onclick = function() {
+      submitButtonEle.disabled = true;
+      translateProgressEle.innerHTML = "翻译中...";
+
+      let interval = null;
+      const getResult = (jobId) => {
+        // 查询任务状态及参数格式，可参考 https://cloud.tencent.com/document/product/460/84765
+        cos.request({
+          Bucket: InputConf.Bucket,
+          Region: InputConf.Region,
+          Method: 'GET',
+          Url: 'https://' + host + `/jobs/${jobId}`,
+          Key: `/jobs/${jobId}` /** 固定值，必须 */
+        }, (err, data) => {
+          if(err) {
+            submitButtonEle.disabled = false;
+            translateProgressEle.innerHTML = "翻译出错，请在console查看报错信息";
+            console.log(JSON.stringify(err));
+            return;
+          }
+          if (data.Response.JobsDetail.State === 'Success') {
+            submitButtonEle.disabled = false;
+            translateProgressEle.innerHTML = `翻译已完成，请在存储桶${OutputConf.Bucket}中查看翻译结果文件${OutputConf.FileName}`;
+            clearInterval(interval)
+          } else if (data.Response.JobsDetail.State === 'Failed') {
+            submitButtonEle.disabled = false;
+            translateProgressEle.innerHTML = "翻译出错，请在console查看报错信息";
+            console.log(data.Response.JobsDetail?.Message)
+            clearInterval(interval)
+          }
+        })
+      }
+
+      // 创建翻译任务请求及参数格式，可参考 https://cloud.tencent.com/document/product/460/84799
+      const body = COS.util.json2xml({
+        "Request": {
+          "Tag": "Translation", /* 创建任务的 Tag：Translation ,必须*/
+          "Input": {
+            "Object": InputConf.FileName, /* 需要翻译的文档文件，存储桶里的路径，必须 */
+            "Lang": "zh", /* 文档语言类型，请根据源文档填入相应的语言类型，必须 */
+            "Type": "pdf", /* 文档类型，请根据源文档填入相应的文档类型，必须 */
+          },
+          "Operation": {
+            "Output": {
+              "Region": OutputConf.Region, /* 存储桶的地域，必须 */
+              "Bucket": OutputConf.Bucket, /* 存储结果的存储桶，必须 */
+              "Object": OutputConf.FileName /* 输出结果的文件名，必须 */
+            },
+            "Translation": {
+              "Lang": "en", /* 目标文档语言类型，必须 */
+              "Type": "pdf" /* 目标文档类型，必须 */
+            },
+          }
+        }
+      });
+      // 创建翻译任务
+      cos.request({
+        Bucket: InputConf.Bucket,
+        Region: InputConf.Region,
+        Method: 'POST',
+        Url: 'https://' + host + '/jobs',
+        Key: '/jobs', /** 固定值，必须 */
+        ContentType: 'application/xml', /** 固定值，必须 */
+        Body: body
+      }, (err, data) => {
+        if(err) {
+          submitButtonEle.disabled = false;
+          translateProgressEle.innerHTML = "翻译出错，请在console查看报错信息";
+          console.log(JSON.stringify(err));
+          return;
+        }
+
+        // 查询任务状态
+        if (data?.Response?.JobsDetail?.State === 'Submitted') {
+          interval = setInterval(() => {
+            getResult(data.Response.JobsDetail.JobId)
+          }, 5000)
+        }
+      })
+    }
+  </script>
+</body>
+</html>
