@@ -52,7 +52,7 @@
       */
 
       // 存储桶配置请在cos控制台获取。https://console.cloud.tencent.com/cos/bucket
-      // 格式参考：Bucket: 'abc-1250000000', Region: 'ap-shanghai'，FileName：‘demo.png’
+      // 格式参考：Bucket: 'abc-1250000000', Region: 'ap-shanghai'，FileName：'demo.png'
       const config = {
         // 需要替换成您自己的存储桶信息
         Bucket: '***-125********' /* 存储桶，必须 */,
@@ -70,9 +70,9 @@
       });
 
       /*  操作步骤：
-       1. 预先将原图上传到cos 存储桶中。
+       1. 预先将原图上传到cos存储桶中。
        2. 根据原图尺寸，初始化用于涂抹的canvas画布。
-       3. 使用鼠标在canvas上标记涂抹的区域，涂抹完成后将canvas遮罩图上传到cos 存储桶中。
+       3. 使用鼠标在canvas上标记涂抹的区域，涂抹完成后将canvas遮罩图上传到cos存储桶中。
        4. 遮罩图上传成功后获取携带图像修复相关参数的url可访问地址。
       */
 
