@@ -123,17 +123,17 @@
         }, (err, data) => {
           if(err) {
             submitButtonEle.disabled = false;
-            translateProgressEle.innerHTML = "翻译出错，请在console查看报错信息";
+            translateProgressEle.innerHTML = "生成水印出错，请在console查看报错信息";
             console.log(JSON.stringify(err));
             return;
           }
           if (data.Response.JobsDetail.State === 'Success') {
             submitButtonEle.disabled = false;
-            translateProgressEle.innerHTML = `翻译已完成，请在存储桶${OutputConf.Bucket}中查看翻译结果文件${OutputConf.FileName}`;
+            translateProgressEle.innerHTML = `生成水印已完成，请在存储桶${OutputConf.Bucket}中查看翻译结果文件${OutputConf.FileName}`;
             clearInterval(interval)
           } else if (data.Response.JobsDetail.State === 'Failed') {
             submitButtonEle.disabled = false;
-            translateProgressEle.innerHTML = "翻译出错，请在console查看报错信息";
+            translateProgressEle.innerHTML = "生成水印出错，请在console查看报错信息";
             console.log(data.Response.JobsDetail?.Message)
             clearInterval(interval)
           }
@@ -144,7 +144,7 @@
       
       let param = {
         "Request": {
-          "Tag": "Transcode", /* 创建任务的 Transcode ,必须*/
+          "Tag": "Watermark", /* 创建任务的Tag Watermark ,必须*/
           "Input": {
             "Object": InputConf.FileName, /* 需要的视频文件，存储桶里的路径，必须 */
           },
@@ -153,11 +153,6 @@
               "Region": OutputConf.Region, /* 存储桶的地域，必须 */
               "Bucket": OutputConf.Bucket, /* 存储结果的存储桶，必须 */
               "Object": OutputConf.FileName /* 输出结果的文件名，必须 */
-            },
-            "Transcode": {
-                "Audio": {"Codec": "aac"},
-                "Container": {"Format": "mp4"},
-                "Video": {"Codec": "H.264"}
             },
             "Watermark": {
                 "Dx": "10", // 水平偏移
