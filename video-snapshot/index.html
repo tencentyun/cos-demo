@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>视频截帧</title>
+    <!--播放器样式文件-->
+    <link href="https://web.sdk.qcloud.com/player/tcplayer/release/v4.6.0/tcplayer.min.css" rel="stylesheet" />
+    <!--播放器脚本文件-->
+    <script src="https://web.sdk.qcloud.com/player/tcplayer/release/v4.6.0/tcplayer.v4.6.0.min.js"></script>
+    <!--COS SDK-->
+    <script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        padding: 20px;
+      }
+      .tow-box {
+        display: flex;
+      }
+      .tow-box > div {
+        flex: 1;
+        padding: 20px;
+      }
+      #player-container {
+        background-color: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="tow-box">
+        <div>
+          <p>原视频</p>
+          <video id="player-container-left" width="570" height="450" preload="auto" playsinline webkit-playsinline></video>
+        </div>
+        <div>
+          <p>截帧效果</p>
+          <video id="player-container-right" width="570" height="450" preload="auto" playsinline webkit-playsinline></video>
+        </div>
+      </div>
+      <div style="padding: 20px">
+        <button onclick="postTask()">截帧并设置封面</button>
+        <span id="msg-text"></span>
+      </div>
+    </div>
+    <script>
+      /*
+      准备工作：
+      1. 在cos控制台创建一个存储桶，可拿到存储桶名称和地域，即Bucket，Region。
+      2. 进入存储桶配置页面，设置对应的跨域规则（简单调试可将来源Origin设置为*）。
+      3. 进入访问管理控制台，获取API密钥，即SecretId，SecretKey。
+      */
+
+      // 存储桶配置请在cos控制台获取。https://console.cloud.tencent.com/cos/bucket
+      // 格式参考：Bucket: 'abc-1250000000', Region: 'ap-shanghai'
+      const config = {
+        // 需要替换成您自己的存储桶信息
+        Bucket: '*****' /* 存储桶，必须 */,
+        Region: '*****' /* 存储桶所在地域，必须字段 */,
+        FileName: '***.mp4' /* 视频文件名 */,
+      };
+      //初始化TCPlayer播放器
+      const leftPlayer = TCPlayer('player-container-left', {});
+      leftPlayer.src(`https://${config.Bucket}.cos.${config.Region}.myqcloud.com/${config.FileName}`);
+
+      const msgText = document.querySelector('#msg-text');
+
+      // 注意：以下初始化方式仅供联调测试使用，为了安全起见，请勿在生产环境直接暴露密钥。
+      // 生产环境请参考各语言SDK签名实现。https://cloud.tencent.com/document/product/436/7778#sdk-.E7.AD.BE.E5.90.8D.E5.AE.9E.E7.8E.B0
+
+      // 密钥请在访问管理控制台获取。https://console.cloud.tencent.com/cam/capi
+      const cos = new COS({
+        SecretId: '*********************',
+        SecretKey: '************************',
+      });
+
+      // 提交视频截帧任务。https://cloud.tencent.com/document/product/460/76910
+      function postTask() {
+        msgText.innerHTML = '';
+
+        const host = config.Bucket + '.ci.' + config.Region + '.myqcloud.com';
+        const url = 'https://' + host + '/jobs';
+        const body = COS.util.json2xml({
+          Request: {
+            Tag: 'Snapshot' /* 创建任务的 Tag：Snapshot ,必须*/,
+            Input: {
+              Object: `${config.FileName}` /* 需要截帧的视频文件，存储桶里的路径 */,
+            },
+            Operation: {
+              //指定该任务的参数。 https://cloud.tencent.com/document/product/460/77091#Snapshot
+              Snapshot: {
+                Mode: 'Interval' /* 截图模式,Interval 表示间隔模式 Average 表示平均模式 KeyFrame 表示关键帧模式 */,
+                Start: '5' /* 开始时间,单位为秒 */,
+                Count: '25' /* 截图数量，必须 */,
+                SnapshotOutMode: 'OnlySprite' /* 截图输出模式参数, OnlySnapshot 表示仅输出截图模式 OnlySprite 表示仅输出雪碧图模式 SnapshotAndSprite 表示输出截图与雪碧图模式*/,
+                SpriteSnapshotConfig: {
+                  Color: 'Black' /* 背景颜色，必须,支持颜色详见 https://www.ffmpeg.org/ffmpeg-utils.html#color-syntax */,
+                  Columns: '5' /* 雪碧图列数，必须*/,
+                  Lines: '5' /* 雪碧图行数，必须 */,
+                },
+              },
+              Output: {
+                Bucket: config.Bucket /* 	存储结果的存储桶 ,必须 */,
+                Region: config.Region /* 	存储结果存储桶地域 ,必须 */,
+                Object: `***.jpg` /* 结果文件的名称 ,必须 */,
+                SpriteObject: `***.jpg` /* 雪碧图的名字 ,必须 */,
+              },
+            },
+          },
+        });
+        cos.request(
+          {
+            Bucket: config.Bucket,
+            Region: config.Region,
+            Method: 'POST',
+            Url: url,
+            Key: '/jobs' /** 固定值，必须 */,
+            ContentType: 'application/xml' /** 固定值，必须 */,
+            Body: body,
+          },
+          (err, data) => {
+            if (err) {
+              msgText.innerHTML = '视频截帧失败，请在console查看报错信息';
+              console.log(JSON.stringify(err));
+              return;
+            }
+            const resp = data.Response || {};
+            //调用查询任务
+            queryTask(resp.JobsDetail.JobId);
+          }
+        );
+      }
+
+      //定时查询视频截帧任务执行结果。https://cloud.tencent.com/document/product/460/84765
+      function queryTask(JobId) {
+        setTimeout(() => {
+          const host = config.Bucket + '.ci.' + config.Region + '.myqcloud.com';
+          const url = 'https://' + host + '/jobs/' + JobId;
+          cos.request(
+            {
+              Bucket: config.Bucket,
+              Region: config.Region,
+              Method: 'GET',
+              Url: url,
+              Key: '/jobs/' + JobId /** 固定值，必须 */,
+              ContentType: 'application/xml' /** 固定值，必须 */,
+            },
+            async (err, data) => {
+              if (err) {
+                msgText.innerHTML = '视频截帧任务查询失败，请在console查看报错信息';
+                console.log(JSON.stringify(err));
+                return;
+              }
+              const resp = data.Response || {};
+              //判断视频截帧任务是否执行中
+              if (resp.JobsDetail.State !== 'Success') {
+                msgText.innerHTML = '视频截帧任务执行中...';
+                queryAsrTrack(JobId);
+                return;
+              }
+              // 任务执行完成 初始化播放器
+              msgText.innerHTML = '视频截帧任务完成';
+              //设置封面图
+              const leftPlayer = TCPlayer('player-container-right', {
+                poster: `https://${config.Bucket}.cos.${config.Region}.myqcloud.com/demo.jpg`,
+              });
+              leftPlayer.src(`https://${config.Bucket}.cos.${config.Region}.myqcloud.com/${config.FileName}`);
+              // document.getElementById('imgId').src = url;
+            }
+          );
+        }, 2000);
+      }
+    </script>
+  </body>
+</html>
