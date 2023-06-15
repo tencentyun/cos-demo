@@ -21,10 +21,9 @@ var config = {
 // 生成要上传的 COS 文件路径文件名
 var generateCosKey = function (ext) {
   var ymd = moment().format('YYYYMMDD');
-  var ymd = moment().format('YYYYMMDD_HHmmss_');
-  var r = ('000000' + Math.random() * 1000000).slice(-6);
-  var cosKey = `images_direct/${ymd}/IMG_${ymd}_${r}.${ext}`;
-  return cosKey;
+  var timeStr = moment().format('YYYYMMDD_HHmmss');
+  var rand = ('000000' + Math.random() * 1000000).slice(-6);
+  return `images/${ymd}/IMG_${timeStr}_${rand}.${ext}`;
 };
 
 // 获取临时秘钥
