@@ -137,17 +137,17 @@ const util = {
 
 
 // 创建临时密钥服务和用于调试的静态服务
-const sts = express();
-sts.use('/server', (req, res) => res.send(`${req.path} deny`)); // 限制 /server 目录被当作静态访问
-sts.use(express.static(pathLib.resolve(__dirname, '../'))); // 对项目跟路径放开静态访问
-sts.use(bodyParser.json());
-sts.use((req, res, next) => {
+const app = express();
+app.use('/server', (req, res) => res.send(`${req.path} deny`)); // 限制 /server 目录被当作静态访问
+app.use(express.static(pathLib.resolve(__dirname, '../'))); // 对项目跟路径放开静态访问
+app.use(bodyParser.json());
+app.use((req, res, next) => {
     console.log(`[access] ${req.method} ${req.url}`);
     next();
 });
 
 // 获取上传用的路径和签名
-sts.get('/api/sign/upload', function (req, res, next) {
+app.get('/api/sign/upload', function (req, res, next) {
     const ext = req.query.ext;
     if (!config.allowExtList.includes(ext)) return res.send({code: -1, message: '上传不支持该格式'});
     const cosKey = util.generateCosKey(ext);
@@ -177,7 +177,7 @@ sts.get('/api/sign/upload', function (req, res, next) {
 });
 
 // 获取上传用的路径和签名
-sts.get('/api/sign/download', function (req, res, next) {
+app.get('/api/sign/download', function (req, res, next) {
     const cosKey = req.query.key;
     // 获取上传的签名
     util.getSignedUrl({
@@ -194,7 +194,7 @@ sts.get('/api/sign/download', function (req, res, next) {
 });
 
 // 获取上传用的路径和签名
-sts.get('/api/sign/AISuperResolution2', function (req, res, next) {
+app.get('/api/sign/AISuperResolution2', function (req, res, next) {
     util.getSignedUrl({
         // STS policy 需要的参数
         Action: 'cos:GetObject',
@@ -211,8 +211,8 @@ sts.get('/api/sign/AISuperResolution2', function (req, res, next) {
     });
 });
 
-sts.all('*', (req, res) => res.send('404 not found!'));
+app.all('*', (req, res) => res.send('404 not found!'));
 
 // 启动签名服务
-sts.listen(3000);
+app.listen(3000);
 console.log('app is listening at http://127.0.0.1:3000');
