@@ -129,7 +129,7 @@
           }
           if (data.Response.JobsDetail.State === 'Success') {
             submitButtonEle.disabled = false;
-            translateProgressEle.innerHTML = `生成水印已完成，请在存储桶${OutputConf.Bucket}中查看翻译结果文件${OutputConf.FileName}`;
+            translateProgressEle.innerHTML = `生成水印已完成，请在存储桶${OutputConf.Bucket}中查看生成水印结果文件${OutputConf.FileName}`;
             clearInterval(interval)
           } else if (data.Response.JobsDetail.State === 'Failed') {
             submitButtonEle.disabled = false;
@@ -140,7 +140,7 @@
         })
       }
 
-      // 创建视频水印任务请求及参数格式，可参考 https://cloud.tencent.com/document/product/460/84799
+      // 创建视频水印任务请求及参数格式，可参考 https://cloud.tencent.com/document/product/460/84781
       
       let param = {
         "Request": {
