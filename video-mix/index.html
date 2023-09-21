@@ -25,7 +25,7 @@
       <div class="resourceFile">
         <div>源文件：</div>
         <video
-          src="https://xing-test-bucket-1251704708.cos.ap-guangzhou.myqcloud.com/%E4%BB%8B%E7%BB%8D.mp4"
+          src="*******************************"
           width="570"
           height="450"
           controls
@@ -33,7 +33,7 @@
       </div>
 
       <div class="changeFile">
-        <div>视频混音后的新视频：</div>
+        <div>混音后视频：</div>
         <video id="changeFile-id" width="570" height="450"></video>
       </div>
     </div>
@@ -61,19 +61,33 @@
 
       // 存储桶配置请在cos控制台获取。https://console.cloud.tencent.com/cos/bucket
       // 格式参考：Bucket: 'abc-1250000000', Region: 'ap-shanghai'
+      // 上传音视频文件
       const config = {
         // 需要替换成您自己的存储桶信息
-        Bucket: "xing-test-bucket-1251704708" /* 存储桶，必须 */,
-        Region: "ap-guangzhou" /* 存储桶所在地域，必须字段 */,
-        FileName: "介绍.mp4" /* 文件名 */,
-        MixFileName: "撒贝宁.mp4" /* 混音视频文件名 */,
+        Bucket: "******125********" /* 存储桶，必须 */,
+        Region: "**-*********" /* 存储桶所在地域，必须字段 */,
+        FileName: "demo1.mp4" /* 文件名 */,
+        MixFileName: "demo2.mp4" /* 混音视频文件名 */,
       };
 
       const msgText = document.querySelector("#msg-text");
 
-      // 提交一个音视频转码任务。（使用模版方式） https://cloud.tencent.com/document/product/460/84790
+      /**
+       * 提交一个音视频转码任务。（使用转码模版参数方式）
+       * AudioSource: 混音音频url
+       * 1. 传入资源如果为存储桶文件，需先使用cos.getObjectUrl进行处理
+       * 2. 支持网上资源url传入
+       */
       async function postTranscode() {
         msgText.innerHTML = "开始...";
+
+        const AkUrl = await cos.getObjectUrl({
+          Bucket: config.Bucket,
+          Region: config.Region,
+          Key: config.MixFileName,
+          Sign: true,
+        });
+
         const key = `jobs`; // 固定值，必须
         const host = `${config.Bucket}.ci.${config.Region}.myqcloud.com`;
         const url = `https://${host}/${key}`;
@@ -88,19 +102,21 @@
             },
             // 操作规则;是否必传：是
             Operation: {
-              // TemplateId与Transcode 二选一传入（下面另外一个任务使用Transcode的方式）
-              // 转码模板 ID;是否必传：否，可通过控制台获取
-              TemplateId: "t100dc341325774886886214cdc75c7e10",
-              // 去除水印参数,  H265、AV1编码暂不支持该参数;是否必传：否
-              RemoveWatermark: {
-                // 距离左上角原点 x 偏移，范围为[1, 4096];是否必传：是
-                Dx: 150,
-                // 距离左上角原点 y 偏移，范围为[1, 4096];是否必传：是
-                Dy: 150,
-                // 宽，范围为[1, 4096];是否必传：是
-                Width: 75,
-                // 高，范围为[1, 4096];是否必传：是
-                Height: 75,
+              // 转码模板参数
+              Transcode: {
+                Container: {
+                  Format: "mp4",
+                },
+                Video: {
+                  Codec: "H.264",
+                },
+                Audio: {
+                  Codec: "aac",
+                },
+                AudioMix: {
+                  AudioSource: AkUrl,
+                  Replace: true,
+                },
               },
               // 结果输出配置;是否必传：是
               Output: {
@@ -109,21 +125,9 @@
                 // 存储结果的存储桶;是否必传：是
                 Bucket: config.Bucket,
                 // 输出结果的文件名;是否必传：是
-                Object: "拆分之后的音频.mp3",
+                Object: "混音完成的视频.mp4",
               },
-              // 透传用户信息，可打印的 ASCII 码，长度不超过1024;是否必传：否
-              UserData: "",
-              // 任务优先级，级别限制：0 、1 、2 。级别越大任务优先级越高，默认为0;是否必传：否
-              JobLevel: "0",
             },
-            // 任务所在的队列类型，限制为 SpeedTranscoding, 表示为开启倍速转码;是否必传：否
-            QueueType: "SpeedTranscoding",
-            // 任务回调格式，JSON 或 XML，默认 XML，优先级高于队列的回调格式;是否必传：否
-            CallBackFormat: "",
-            // 任务回调类型，Url 或 TDMQ，默认 Url，优先级高于队列的回调类型;是否必传：否
-            CallBackType: "Url",
-            // 任务回调地址，优先级高于队列的回调地址。设置为 no 时，表示队列的回调地址不产生回调;是否必传：否
-            CallBack: "",
           },
         });
 
@@ -135,7 +139,7 @@
           ContentType: "application/xml", // 固定值，必须
         });
 
-        if (res.Response) {
+        if (res.statusCode === 200) {
           queryTranceTrack(res.Response.JobsDetail.JobId);
         }
       }
@@ -170,7 +174,6 @@
               }
               // 任务执行完成 初始化播放器
               msgText.innerHTML = "任务完成";
-              console.log(resp.JobsDetail.Operation.Output.Object);
 
               const AkUrl = await cos.getObjectUrl({
                 Bucket: config.Bucket,
@@ -179,86 +182,13 @@
                 Sign: true,
               });
 
-              postTranscodeMix(AkUrl);
+              // 视频混音后的效果展示
+              const changeFile = document.querySelector("#changeFile-id");
+              changeFile.src = AkUrl;
+              changeFile.controls = true;
             }
           );
         }, 2000);
-      }
-
-      /**
-       * 提交一个音视频转码任务。（使用转码模版参数方式）
-       * audioFile: 混音音频url
-       * 1. 传入资源如果为存储桶文件，需先使用cos.getObjectUrl进行处理
-       * 2. 支持网上资源url传入
-       */
-      async function postTranscodeMix(audioFile) {
-        const key = `jobs`; // 固定值，必须
-        const host = `${config.Bucket}.ci.${config.Region}.myqcloud.com`;
-        const url = `https://${host}/${key}`;
-        const body = COS.util.json2xml({
-          Request: {
-            // 创建任务的Tag：Transcode;是否必传：是
-            Tag: "Transcode",
-            // 待操作的文件信息;是否必传：是
-            Input: {
-              // 文件路径;是否必传：是
-              Object: config.MixFileName,
-            },
-            // 操作规则;是否必传：是
-            Operation: {
-              // 转码模板参数
-              Transcode: {
-                Container: {
-                  Format: "mp4",
-                },
-                Video: {
-                  Codec: "H.264",
-                },
-                Audio: {
-                  Codec: "aac",
-                },
-                AudioMix: {
-                  AudioSource: audioFile,
-                  Replace: true,
-                },
-              },
-              // 结果输出配置;是否必传：是
-              Output: {
-                // 存储桶的地域;是否必传：是
-                Region: config.Region,
-                // 存储结果的存储桶;是否必传：是
-                Bucket: config.Bucket,
-                // 输出结果的文件名;是否必传：是
-                Object: "混音完成的视频.mp4",
-              },
-            },
-            // 任务所在的队列类型，限制为 SpeedTranscoding, 表示为开启倍速转码;是否必传：否
-            QueueType: "SpeedTranscoding",
-          },
-        });
-
-        // data.Response
-        const res = await cos.request({
-          Method: "POST", // 固定值，必须
-          Key: key, // 必须
-          Url: url, // 请求的url，必须
-          Body: body, // 请求体参数，必须
-          ContentType: "application/xml", // 固定值，必须
-        });
-
-        if (res.statusCode === 200) {
-          const AkUrl = await cos.getObjectUrl({
-            Bucket: config.Bucket,
-            Region: config.Region,
-            Key: res.Response.JobsDetail.Operation.Output.Object,
-            Sign: true,
-          });
-
-          // 视频混音后的效果展示
-          const changeFile = document.querySelector("#changeFile-id");
-          changeFile.src = AkUrl;
-          changeFile.controls = true;
-        }
       }
     </script>
   </body>
