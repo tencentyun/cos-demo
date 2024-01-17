@@ -115,15 +115,14 @@
     }
 
     const host = InputConf.Bucket + '.ci.' + InputConf.Region + '.myqcloud.com';
-    // const ImageWaterMark = config.Bucket + '.cos.' + config.Region + '.myqcloud.com/' + InputConf.WaterMark
 
     const submitButtonEle = document.getElementById('submit');
-    const translateProgressEle = document.getElementById('voice-progress');
-    translateProgressEle.innerHTML = "待处理任务";
+    const voiceProgressEle = document.getElementById('voice-progress');
+    voiceProgressEle.innerHTML = "待处理任务";
 
     submitButtonEle.onclick = function() {
       submitButtonEle.disabled = true;
-      translateProgressEle.innerHTML = "任务处理中...";
+      voiceProgressEle.innerHTML = "任务处理中...";
 
       let interval = null;
       const getResult = (jobId) => {
@@ -137,17 +136,17 @@
         }, (err, data) => {
           if(err) {
             submitButtonEle.disabled = false;
-            translateProgressEle.innerHTML = "人声分离任务出错，请在console查看报错信息";
+            voiceProgressEle.innerHTML = "人声分离任务出错，请在console查看报错信息";
             console.log(JSON.stringify(err));
             return;
           }
           if (data.Response.JobsDetail.State === 'Success') {
             submitButtonEle.disabled = false;
-            translateProgressEle.innerHTML = `人声分离任务已完成，请在存储桶${OutputConf.Bucket}中查看结果文件${OutputConf.FileName}`;
+            voiceProgressEle.innerHTML = `人声分离任务已完成，请在存储桶${OutputConf.Bucket}中查看结果文件${OutputConf.FileName}`;
             clearInterval(interval)
           } else if (data.Response.JobsDetail.State === 'Failed') {
             submitButtonEle.disabled = false;
-            translateProgressEle.innerHTML = "人声分离任务出错，请在console查看报错信息";
+            voiceProgressEle.innerHTML = "人声分离任务出错，请在console查看报错信息";
             console.log(data.Response.JobsDetail?.Message)
             clearInterval(interval)
           }
@@ -213,7 +212,7 @@
       }, (err, data) => {
         if(err) {
           submitButtonEle.disabled = false;
-          translateProgressEle.innerHTML = "生成出错，请在console查看报错信息";
+          voiceProgressEle.innerHTML = "生成出错，请在console查看报错信息";
           console.log(JSON.stringify(err));
           return;
         }
