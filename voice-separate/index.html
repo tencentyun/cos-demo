@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人声分离</title>
+  <script src="../common/cos-js-sdk-v5.min.js"></script>
+  <style>
+    html,body {
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      padding: 20px;
+    }
+    .button-area {
+      min-width: 100px;
+    }
+
+    .translate-area {
+      margin: 20px 0;
+    }
+    .image-watermark {
+        /* display: block; */
+        margin-bottom: 10px;
+        margin-left:10px
+    }
+    .font-watermark {
+        /* display: block; */
+        margin-bottom: 10px;
+    }
+    .start-task{ 
+        display: block;
+        margin-top: 10px;
+    }
+    .watermark-raido{
+        margin-left: 10px;
+    }
+    .watermark-img {
+        vertical-align: text-top;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="button-area">
+      <input name="watermark" onchange="watermarkChange(0)" type="radio" value="0" checked/><span class="font-watermark">人声</span> 
+      <input class="watermark-raido" name="watermark" onchange="watermarkChange(1)" type="radio" value="1"/><span class="image-watermark">背景声</span> 
+      <input class="watermark-raido" name="watermark" onchange="watermarkChange(2)" type="radio" value="2"/><span class="image-watermark">人声和背景声</span>  
+ 
+      <input class="watermark-raido" name="watermark" onchange="watermarkChange(3)" type="radio" value="3"/><span class="image-watermark">贝斯、鼓点</span>  
+
+      <button class="start-task" id="submit">开始任务</button>
+    </div>
+    <div class="translate-area">
+      <p>生成结果：</p>
+      <div id="translate-progress"></div>
+    </div>
+  </div>
+  <script src="../common/xml2json.js"></script>
+  <script>
+      
+  </script>
+  <script>
+
+    /*
+      准备工作：
+      1. 在cos控制台创建一个存储桶，可拿到存储桶名称和地域，即Bucket，Region。
+      2. 进入存储桶配置页面，设置对应的跨域规则（简单调试可将来源Origin设置为*）。
+      3. 进入访问管理控制台，获取API密钥，即SecretId，SecretKey。
+    */
+
+    // 注意：以下初始化方式仅供联调测试使用，为了安全起见，请勿在生产环境直接暴露密钥。
+    // 生产环境请参考各语言SDK签名实现。https://cloud.tencent.com/document/product/436/7778#sdk-.E7.AD.BE.E5.90.8D.E5.AE.9E.E7.8E.B0
+    // 密钥请在访问管理控制台获取。https://console.cloud.tencent.com/cam/capi
+    // const cos = new COS({
+    //   SecretId: 'AKID*****************************',
+    //   SecretKey: '********************************'
+    // });
+
+    const cos = new COS({
+        SecretId: 'AKID*******',
+        SecretKey: '**********',
+    });
+
+    // 存储桶配置请在cos控制台获取。https://console.cloud.tencent.com/cos/bucket
+    // 格式参考：Bucket: 'abc-1250000000', Region: 'ap-shanghai'
+    // 源视频文件相关配置
+    // const InputConf = {
+    //   Bucket: '***-125********',
+    //   Region: '**-*****',
+    //   FileName: 'demo.mp4',
+      
+    // };
+
+    const InputConf = {
+      Bucket: '***-125********',
+      Region: '**-*****',
+      FileName: 'demo.mp4',
+      
+    };
+    
+    const OutputConf = {
+      Bucket: '***-125********',
+      Region: 'ap-chongqing',
+      Auobject: '',
+      object: '',
+      BassObject: '',
+      DrumObject: ''
+    };
+
+    let radioChecked = 0
+
+    function watermarkChange(val) {
+        radioChecked = val
+    }
+
+    const host = InputConf.Bucket + '.ci.' + InputConf.Region + '.myqcloud.com';
+    // const ImageWaterMark = config.Bucket + '.cos.' + config.Region + '.myqcloud.com/' + InputConf.WaterMark
+
+    const submitButtonEle = document.getElementById('submit');
+    const translateProgressEle = document.getElementById('translate-progress');
+    translateProgressEle.innerHTML = "待处理任务";
+
+    submitButtonEle.onclick = function() {
+      submitButtonEle.disabled = true;
+      translateProgressEle.innerHTML = "任务处理中...";
+
+      let interval = null;
+      const getResult = (jobId) => {
+        // 查询任务状态及参数格式，可参考 https://cloud.tencent.com/document/product/460/84765
+        cos.request({
+          Bucket: InputConf.Bucket,
+          Region: InputConf.Region,
+          Method: 'GET',
+          Url: 'https://' + host + `/jobs/${jobId}`,
+          Key: `/jobs/${jobId}` /** 固定值，必须 */
+        }, (err, data) => {
+          if(err) {
+            submitButtonEle.disabled = false;
+            translateProgressEle.innerHTML = "人声分离任务出错，请在console查看报错信息";
+            console.log(JSON.stringify(err));
+            return;
+          }
+          if (data.Response.JobsDetail.State === 'Success') {
+            submitButtonEle.disabled = false;
+            translateProgressEle.innerHTML = `人声分离任务已完成，请在存储桶${OutputConf.Bucket}中查看结果文件${OutputConf.FileName}`;
+            clearInterval(interval)
+          } else if (data.Response.JobsDetail.State === 'Failed') {
+            submitButtonEle.disabled = false;
+            translateProgressEle.innerHTML = "人声分离任务出错，请在console查看报错信息";
+            console.log(data.Response.JobsDetail?.Message)
+            clearInterval(interval)
+          }
+        })
+      }
+
+      
+      let param = {
+        "Request": {
+          "Tag": "VoiceSeparate", /* 创建任务的Tag Watermark ,必须*/
+          "Input": {
+            "Object": InputConf.FileName, /* 需要的视频文件，存储桶里的路径，必须 */
+          },
+          "Operation": {
+            "Output": {
+              "Region": OutputConf.Region, /* 存储桶的地域，必须 */
+              "Bucket": OutputConf.Bucket, /* 存储结果的存储桶，必须 */
+              "AuObject": OutputConf.FileName /* 输出结果的文件名，必须 */
+            },
+            "VoiceSeparate": {
+                "AudioConfig": {
+                    "Bitrate": 500,
+                    "Channels": 2,
+                    "Codec": 'mp3',
+                    "Samplerate": 44100
+                },
+                "AudioMode": "IsAudio" 
+            }
+           
+          }
+        }
+      }
+      if (radioChecked === 0) {
+        param.Request.Operation.VoiceSeparate.AudioMode = "IsAudio"
+
+        param.Request.Operation.Output.AuObject = 'auobject.mp3';
+
+      } else if (radioChecked === 1) {
+        param.Request.Operation.VoiceSeparate.AudioMode = "IsBackground"
+
+        param.Request.Operation.Output.Object = 'background.mp3';
+      } else if (radioChecked === 2) {
+        param.Request.Operation.VoiceSeparate.AudioMode = "AudioAndBackground"
+
+        param.Request.Operation.Output.AuObject = 'auobject.mp3';
+        param.Request.Operation.Output.Object = 'background.mp3';
+
+      }else if (radioChecked === 3) {
+        param.Request.Operation.Output.BassVoice = 'bassVoice.mp3';
+        param.Request.Operation.Output.DrumVoice = 'drumVoice.mp3';
+
+      }
+      const body = COS.util.json2xml(param);
+      // 创建人声分离任务任务
+      cos.request({
+        Bucket: InputConf.Bucket,
+        Region: InputConf.Region,
+        Method: 'POST',
+        Url: 'https://' + host + '/jobs',
+        Key: '/jobs', /** 固定值，必须 */
+        ContentType: 'application/xml', /** 固定值，必须 */
+        Body: body
+      }, (err, data) => {
+        if(err) {
+          submitButtonEle.disabled = false;
+          translateProgressEle.innerHTML = "生成出错，请在console查看报错信息";
+          console.log(JSON.stringify(err));
+          return;
+        }
+
+        // 查询任务状态
+        if (data?.Response?.JobsDetail?.State === 'Submitted') {
+          interval = setInterval(() => {
+            getResult(data.Response.JobsDetail.JobId)
+          }, 5000)
+        }
+      })
+    }
+  </script>
+</body>
+</html>
