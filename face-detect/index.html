@@ -9,9 +9,9 @@
   <style>
     html,body {
       margin: 0;
-      padding: 0;      
+      padding: 0;
     }
-    .container {        
+    .container {
       padding: 20px;
     }
     #err-msg {
@@ -22,8 +22,8 @@
       margin: 20px;
     }
     .img-area {
-      width: 700px;      
-      height: auto;      
+      width: 700px;
+      height: auto;
     }
     .img-area img {
       width: 100%;
@@ -32,7 +32,7 @@
 </head>
 <body>
   <div class="container">
-    <div>      
+    <div>
       <input type="file" id="file-selector"/>
       <span id="err-msg"></span>
     </div>
@@ -53,7 +53,7 @@
       3. 进入访问管理控制台，获取API密钥，即SecretId，SecretKey。
     */
 
-            
+
     // 注意：以下初始化方式仅供联调测试使用，为了安全起见，请勿在生产环境直接暴露密钥。
     // 生产环境请参考各语言SDK签名实现。https://cloud.tencent.com/document/product/436/7778#sdk-.E7.AD.BE.E5.90.8D.E5.AE.9E.E7.8E.B0
 
@@ -82,34 +82,34 @@
       sourceFileEle.setAttribute('src', '');
       faceResultsEle.innerHTML = '';
 
-      let file = this.files[0];      
+      let file = this.files[0];
 
       if (!file) {
         errMsgEle.innerHTML = '未发现上传文件';
         return;
-      }        
+      }
 
-      if(!['image/jpeg', 'image/png', 'image/bmp', 'application/pdf'].includes(file.type)) {        
+      if(!['image/jpeg', 'image/png', 'image/bmp', 'application/pdf'].includes(file.type)) {
         e.target.value = '';
-        errMsgEle.innerHTML = '当前仅支持图片格式：PNG、JPG、JPEG、BMP 及 PDF 文件';        
-        return;                            
-      }    
-      
+        errMsgEle.innerHTML = '当前仅支持图片格式：PNG、JPG、JPEG、BMP 及 PDF 文件';
+        return;
+      }
+
       let basicParams = {
         ...bucketConf,
         Key: file.name
       };
-      
+
       cos.putObject({
           ...basicParams,
           Body: file,
           onProgress: progressData => console.log('上传中，' + JSON.stringify(progressData))
-      }, (err, data) => {  
+      }, (err, data) => {
         if(err) {
           errMsgEle.innerHTML = '上传对象失败，请在console查看报错信息';
           console.log(JSON.stringify(err));
           return;
-        }        
+        }
 
         sourceFileEle.setAttribute('src', '//'+data.Location);
         faceResultsEle.innerHTML = '<li>分析中...</li>';
@@ -118,11 +118,11 @@
           ...basicParams,
           // 人脸检测请求参数配置可参考 https://cloud.tencent.com/document/product/436/64315
           Query: {
-            'ci-process': 'DetectFace',  
-            'max-face-num': 1    
-          }              
+            'ci-process': 'DetectFace',
+            'max-face-num': 1
+          }
         }, (err, data) => {
-          
+
           if(err) {
             errMsgEle.innerHTML = 'face检测失败，请在console查看报错信息';
             console.log(JSON.stringify(err));

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>COS 代码示例</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei UI";
+        }
+
+        h1 {
+            font-weight: normal;
+        }
+
+        table {
+            margin-bottom: 10px;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 5px 10px;
+            border: 1px solid #DDD;
+        }
+
+        .page {
+            max-width: 1024px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        .link {
+            color: #006eff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <h1>COS 代码示例</h1>
+    <div id="container"></div>
+</div>
+
+<script>
+    var githubPrefix = 'https://github.com/tencentyun/cos-demo/tree/main/'
+    var list = [
+        {sep: 'COS示例'},
+        {title: '车牌识别', folder: 'car-detect', link: 'car-detect'},
+        {title: '小程序示例', folder: 'miniprogram'},
+        {title: 'uni-app上传示例', folder: 'uni-app'},
+        {sep: '图像处理'},
+        {title: '图片质量评估', folder: 'image-quality', link: 'image-quality'},
+        {title: '图片瑕疵修复', folder: 'image-repair', link: 'image-repair'},
+        {title: '图像超分辨率', folder: 'image-super-resolution', link: 'image-super-resolution'},
+        {sep: '媒体处理'},
+        {title: '视频播放', folder: 'cos-video', link: 'cos-video'},
+        {title: '视频自动添加字幕', folder: 'video-subtitles', link: 'video-subtitles'},
+        {sep: '数据处理'},
+        {title: '文档预览', folder: 'doc-preview', link: 'doc-preview'},
+        {title: '文件翻译', folder: 'translate-file', link: 'translate-file'},
+        {sep: '内容识别'},
+        {title: 'COR文本识别', folder: 'ocr', link: 'ocr'},
+        {title: '识别图片标签', folder: 'detect-image-label', link: 'detect-image-label'},
+        {title: '人脸识别', folder: 'face-detect', link: 'face-detect'},
+        {title: '二维码生成', folder: 'qrcode', link: 'qrcode/qrcode-generate.html'},
+        {title: '二维码识别', folder: 'qrcode', link: 'qrcode/qrcode-identify.html'},
+        {title: 'Logo识别', folder: 'logo-detect', link: 'logo-detect'},
+        {title: '商品抠图&海报合成', folder: 'goodsMatting-posterProduction', link: 'goodsMatting-posterProduction'},
+    ];
+    var tableHtml = list.map(item => {
+        if (item.sep) return '<tr style="background:#d6f2ff"><td colspan="3" style="font-weight:bold">' + item.sep + '</td></tr>';
+        var demoLink = !item.link ? '' : '<a class="link" href="' + item.link + '" target="_blank">示例</a>'
+        return '<tr>' +
+            '<td>' + item.title + '</td>' +
+            '<td><a class="link" href="' + githubPrefix + item.folder + '" target="_blank">代码 ' + item.folder + '</a></td>' +
+            '<td>' + demoLink + '</td>' +
+            '</tr>';
+    }).join('');
+    tableHtml = '<table>' + tableHtml + '</table>';
+    document.getElementById('container').innerHTML = tableHtml;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>视频混音</title>
+    <script src="../common/cos-js-sdk-v5.min.js"></script>
+    <script src="../common/xml2json.js"></script>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        padding: 20px;
+        display: flex;
+        justify-content: space-around;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="resourceFile">
+        <div>源文件：</div>
+        <video id="resourceFile-id" width="570" height="450" controls></video>
+      </div>
+
+      <div class="changeFile">
+        <div>混音后视频：</div>
+        <video id="changeFile-id" width="570" height="450"></video>
+      </div>
+    </div>
+    <div style="margin-top: 20px">
+      <button onclick="postTranscode()">进行视频混音</button>
+      <span id="msg-text"></span>
+    </div>
+
+    <script>
+      /*
+        准备工作：
+        1. 在cos控制台创建一个存储桶，可拿到存储桶名称和地域，即Bucket，Region。
+        2. 进入存储桶配置页面，设置对应的跨域规则（简单调试可将来源Origin设置为*）。
+        3. 进入访问管理控制台，获取API密钥，即SecretId，SecretKey。
+      */
+
+      // 注意：以下初始化方式仅供联调测试使用，为了安全起见，请勿在生产环境直接暴露密钥。
+      // 生产环境请参考各语言SDK签名实现。https://cloud.tencent.com/document/product/436/7778#sdk-.E7.AD.BE.E5.90.8D.E5.AE.9E.E7.8E.B0
+
+      // 密钥请在访问管理控制台获取。https://console.cloud.tencent.com/cam/capi
+      const cos = new COS({
+        SecretId: "AKID*******",
+        SecretKey: "**********",
+      });
+
+      // 存储桶配置请在cos控制台获取。https://console.cloud.tencent.com/cos/bucket
+      // 格式参考：Bucket: 'abc-1250000000', Region: 'ap-shanghai'
+      // 上传音视频文件
+      const config = {
+        // 需要替换成您自己的存储桶信息
+        Bucket: "******125********", // 存储桶
+        Region: "**-*********", // 存储桶所在地域
+        FileName: "demo1.mp4", // 源文件
+        MixFileName: "demo2.mp4", // 混音文件
+        ResultName: "demo3.mp4", // 混音之后自定义文件名
+      };
+
+      // 初始化原视频展示
+      const resourceFile = document.querySelector("#resourceFile-id");
+      resourceFile.src = config.FileName;
+
+      // 任务状态执行各阶段的文字展示
+      const msgText = document.querySelector("#msg-text");
+
+      // 提交一个音视频转码任务
+      async function postTranscode() {
+        msgText.innerHTML = "开始...";
+
+        /**
+         * 支持使用cos桶文件，如果文件为私有读，需要使用cos.getObjectUrl方法得到一个带有签名信息的url
+         * 如果为其他在线资源，可忽略此步骤
+         */
+        const AkUrl = await cos.getObjectUrl({
+          Bucket: config.Bucket,
+          Region: config.Region,
+          Key: config.MixFileName,
+          Sign: true,
+        });
+
+        const key = `jobs`; // 固定值，必须
+        const host = `${config.Bucket}.ci.${config.Region}.myqcloud.com`;
+        const url = `https://${host}/${key}`;
+        const body = COS.util.json2xml({
+          Request: {
+            // 创建任务的Tag
+            Tag: "Transcode",
+            // 待操作的文件信息
+            Input: {
+              // 源文件路径
+              Object: config.FileName,
+            },
+            // 操作规则
+            Operation: {
+              // 转码参数
+              Transcode: {
+                Container: {
+                  Format: "mp4",
+                },
+                Video: {
+                  Codec: "H.264",
+                },
+                Audio: {
+                  Codec: "aac",
+                },
+                // 混音参数
+                AudioMix: {
+                  AudioSource: AkUrl, // 混音文件路径
+                  Replace: true, // 是否保留被混音视频的源音频
+                },
+              },
+              // 结果输出配置
+              Output: {
+                // 存储桶的地域
+                Region: config.Region,
+                // 存储结果的存储桶
+                Bucket: config.Bucket,
+                // 输出结果的文件名
+                Object: config.ResultName,
+              },
+            },
+          },
+        });
+
+        const res = await cos.request({
+          Method: "POST", // 固定值
+          Key: key, // 固定值
+          Url: url, // 请求的url
+          Body: body, // 请求体参数
+          ContentType: "application/xml", // 固定值
+        });
+
+        // 定时查询音视频转码任务执行结果。https://cloud.tencent.com/document/product/460/84765
+        if (res.statusCode === 200) {
+          queryTranceTrack(res.Response.JobsDetail.JobId);
+        }
+      }
+
+      function queryTranceTrack(jobId) {
+        setTimeout(() => {
+          const key = `jobs/${jobId}`; // 需要查询的jobId;
+          const host = config.Bucket + ".ci." + config.Region + ".myqcloud.com";
+          const url = `https://${host}/${key}`;
+          cos.request(
+            {
+              Bucket: config.Bucket,
+              Region: config.Region,
+              Method: "GET",
+              Url: url,
+              Key: key,
+              ContentType: "application/xml",
+            },
+            async (err, data) => {
+              if (err) {
+                msgText.innerHTML = "任务查询失败，请在console查看报错信息";
+                console.log(JSON.stringify(err));
+                return;
+              }
+              const resp = data.Response || {};
+              //判断任务是否在执行中
+              if (resp.JobsDetail.State !== "Success") {
+                msgText.innerHTML = "任务执行中...";
+                queryTranceTrack(jobId);
+                return;
+              }
+              // 任务执行完成 初始化播放器
+              msgText.innerHTML = "任务完成";
+
+              const AkUrl = await cos.getObjectUrl({
+                Bucket: config.Bucket,
+                Region: config.Region,
+                Key: resp.JobsDetail.Operation.Output.Object,
+                Sign: true,
+              });
+
+              // 视频混音后的效果展示
+              const changeFile = document.querySelector("#changeFile-id");
+              changeFile.src = AkUrl;
+              changeFile.controls = true;
+            }
+          );
+        }, 2000);
+      }
+    </script>
+  </body>
+</html>
