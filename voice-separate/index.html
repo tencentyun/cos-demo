@@ -18,15 +18,15 @@
       min-width: 100px;
     }
 
-    .translate-area {
+    .voice-area {
       margin: 20px 0;
     }
-    .image-watermark {
+    .voice-other {
         /* display: block; */
         margin-bottom: 10px;
         margin-left:10px
     }
-    .font-watermark {
+    .voice-human {
         /* display: block; */
         margin-bottom: 10px;
     }
@@ -34,28 +34,26 @@
         display: block;
         margin-top: 10px;
     }
-    .watermark-raido{
+    .voice-raido{
         margin-left: 10px;
     }
-    .watermark-img {
-        vertical-align: text-top;
-    }
+    
   </style>
 </head>
 <body>
   <div class="container">
     <div class="button-area">
-      <input name="watermark" onchange="watermarkChange(0)" type="radio" value="0" checked/><span class="font-watermark">人声</span> 
-      <input class="watermark-raido" name="watermark" onchange="watermarkChange(1)" type="radio" value="1"/><span class="image-watermark">背景声</span> 
-      <input class="watermark-raido" name="watermark" onchange="watermarkChange(2)" type="radio" value="2"/><span class="image-watermark">人声和背景声</span>  
+      <input name="voice" onchange="voiceChange(0)" type="radio" value="0" checked/><span class="voice-human">人声</span> 
+      <input class="voice-raido" name="voice" onchange="voiceChange(1)" type="radio" value="1"/><span class="voice-other">背景声</span> 
+      <input class="voice-raido" name="voice" onchange="voiceChange(2)" type="radio" value="2"/><span class="voice-other">人声和背景声</span>  
  
-      <input class="watermark-raido" name="watermark" onchange="watermarkChange(3)" type="radio" value="3"/><span class="image-watermark">贝斯、鼓点</span>  
+      <input class="voice-raido" name="voice" onchange="voiceChange(3)" type="radio" value="3"/><span class="voice-other">贝斯、鼓点</span>  
 
       <button class="start-task" id="submit">开始任务</button>
     </div>
-    <div class="translate-area">
+    <div class="voice-area">
       <p>生成结果：</p>
-      <div id="translate-progress"></div>
+      <div id="voice-progress"></div>
     </div>
   </div>
   <script src="../common/xml2json.js"></script>
@@ -112,7 +110,7 @@
 
     let radioChecked = 0
 
-    function watermarkChange(val) {
+    function voiceChange(val) {
         radioChecked = val
     }
 
@@ -120,7 +118,7 @@
     // const ImageWaterMark = config.Bucket + '.cos.' + config.Region + '.myqcloud.com/' + InputConf.WaterMark
 
     const submitButtonEle = document.getElementById('submit');
-    const translateProgressEle = document.getElementById('translate-progress');
+    const translateProgressEle = document.getElementById('voice-progress');
     translateProgressEle.innerHTML = "待处理任务";
 
     submitButtonEle.onclick = function() {
