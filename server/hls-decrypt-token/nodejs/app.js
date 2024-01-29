@@ -17,13 +17,13 @@ const getAuth = function (opt) {
 
 	const secretId = opt.secretId;
 	const secretKey = opt.secretKey;
-	const method = opt.method || 'get';
+	let method = opt.method || 'get';
 	method = method.toLowerCase();
 	const pathname = opt.pathname || '/';
 	const queryParams = opt.params || '';
 	const headers = opt.headers || '';
 	const getObjectKeys = function (obj) {
-		const list = [];
+		let list = [];
 		for (const key in obj) {
 			if (obj.hasOwnProperty(key)) {
 				list.push(key);
