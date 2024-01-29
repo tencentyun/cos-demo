@@ -4,7 +4,7 @@ const express = require('express');
 const crypto = require('crypto');
 
 // 配置参数
-var config = {
+const config = {
     // 获取腾讯云密钥，建议使用限定权限的子用户的密钥 https://console.cloud.tencent.com/cam/capi
     secretId: process.env.SecretId,
     secretKey: process.env.SecretKey,
@@ -12,83 +12,83 @@ var config = {
     playerKey: process.env.playerKey
 };
 // 计算签名
-var getAuth = function (opt) {
+const getAuth = function (opt) {
 	opt = opt || {};
 
-	  var secretId = opt.secretId;
-	  var secretKey = opt.secretKey;
-	  var method = opt.method || 'get';
-	  method = method.toLowerCase();
-	  var pathname = opt.pathname || '/';
-	  var queryParams = opt.params || '';
-	  var headers = opt.headers || '';
-	  var getObjectKeys = function (obj) {
-		  var list = [];
-		  for (var key in obj) {
-			  if (obj.hasOwnProperty(key)) {
-				  list.push(key);
-			  }
-		  }
-		  return list.sort();
-	  };
-	  var obj2str = function (obj) {
-		  var i, key, val;
-		  var list = [];
-		  var keyList = Object.keys(obj);
-		  for (i = 0; i < keyList.length; i++) {
-			  key = keyList[i];
-			  val = obj[key] || '';
-			  key = key.toLowerCase();
-			  key = encodeURIComponent(key);
-			  list.push(key + '=' + encodeURIComponent(val));
-		  }
-		  return list.join('&');
-	  };
-	  // 签名有效起止时间
-	  var now = parseInt(new Date().getTime() / 1000) - 1;
-	  var expired = now; // now + ';' + (now + 60) + ''; // 签名过期时间为当前 + 3600s
-	  if (opt.expires) {
-		  expired += (opt.expires * 1);
-	  } else {
-		  expired += 3600;
-	  }
-	  // 要用到的 Authorization 参数列表
-	  var qSignAlgorithm = 'sha1';
-	  var qAk = secretId;
-	  var qSignTime = now + ';' + expired;
-	  var qKeyTime = now + ';' + expired;
-	  var qHeaderList = getObjectKeys(headers).join(';').toLowerCase();
-	  var qUrlParamList = getObjectKeys(queryParams).join(';').toLowerCase();
-	  // 签名算法说明文档：https://www.qcloud.com/document/product/436/7778
-	  // 步骤一：计算 SignKey
-	  var signKey = crypto.createHmac('sha1', secretKey).update(qKeyTime).digest('hex');//CryptoJS.HmacSHA1(qKeyTime, secretKey).toString();
-	  // 新增修改，formatString 添加 encodeURIComponent
-	  //pathname = encodeURIComponent(pathname);
-	  // 步骤二：构成 FormatString
-	  var formatString = [method, pathname, obj2str(queryParams), obj2str(headers), ''].join('\n');
-	  formatString = Buffer.from(formatString, 'utf8');
-	  // 步骤三：计算 StringToSign
-	  var sha1Algo = crypto.createHash('sha1');
-	  sha1Algo.update(formatString);
-	  var res = sha1Algo.digest('hex');
-	  var stringToSign = ['sha1', qSignTime, res, ''].join('\n');
-	  // 步骤四：计算 Signature
-	  var qSignature = crypto.createHmac('sha1', signKey).update(stringToSign).digest('hex');//CryptoJS.HmacSHA1(stringToSign, signKey).toString();
-	  // 步骤五：构造 Authorization
-	  var authorization = [
-		  'q-sign-algorithm=' + qSignAlgorithm,
-		  'q-ak=' + qAk,
-		  'q-sign-time=' + qSignTime,
-		  'q-key-time=' + qKeyTime,
-		  'q-header-list=' + qHeaderList,
-		  'q-url-param-list=' + qUrlParamList,
-		  'q-signature=' + qSignature
+	const secretId = opt.secretId;
+	const secretKey = opt.secretKey;
+	const method = opt.method || 'get';
+	method = method.toLowerCase();
+	const pathname = opt.pathname || '/';
+	const queryParams = opt.params || '';
+	const headers = opt.headers || '';
+	const getObjectKeys = function (obj) {
+		const list = [];
+		for (const key in obj) {
+			if (obj.hasOwnProperty(key)) {
+				list.push(key);
+			}
+		}
+		return list.sort();
+	};
+	const obj2str = function (obj) {
+		let i, key, val;
+		let list = [];
+		let keyList = Object.keys(obj);
+		for (i = 0; i < keyList.length; i++) {
+			key = keyList[i];
+			val = obj[key] || '';
+			key = key.toLowerCase();
+			key = encodeURIComponent(key);
+			list.push(key + '=' + encodeURIComponent(val));
+		}
+		return list.join('&');
+	};
+	// 签名有效起止时间
+	const now = parseInt(new Date().getTime() / 1000) - 1;
+	let expired = now; // now + ';' + (now + 60) + ''; // 签名过期时间为当前 + 3600s
+	if (opt.expires) {
+		expired += (opt.expires * 1);
+	} else {
+		expired += 3600;
+	}
+	// 要用到的 Authorization 参数列表
+	const qSignAlgorithm = 'sha1';
+	const qAk = secretId;
+	const qSignTime = now + ';' + expired;
+	const qKeyTime = now + ';' + expired;
+	const qHeaderList = getObjectKeys(headers).join(';').toLowerCase();
+	const qUrlParamList = getObjectKeys(queryParams).join(';').toLowerCase();
+	// 签名算法说明文档：https://www.qcloud.com/document/product/436/7778
+	// 步骤一：计算 SignKey
+	const signKey = crypto.createHmac('sha1', secretKey).update(qKeyTime).digest('hex');//CryptoJS.HmacSHA1(qKeyTime, secretKey).toString();
+	// 新增修改，formatString 添加 encodeURIComponent
+	//pathname = encodeURIComponent(pathname);
+	// 步骤二：构成 FormatString
+	const formatString = [method, pathname, obj2str(queryParams), obj2str(headers), ''].join('\n');
+	formatString = Buffer.from(formatString, 'utf8');
+	// 步骤三：计算 StringToSign
+	const sha1Algo = crypto.createHash('sha1');
+	sha1Algo.update(formatString);
+	const res = sha1Algo.digest('hex');
+	const stringToSign = ['sha1', qSignTime, res, ''].join('\n');
+	// 步骤四：计算 Signature
+	const qSignature = crypto.createHmac('sha1', signKey).update(stringToSign).digest('hex');//CryptoJS.HmacSHA1(stringToSign, signKey).toString();
+	// 步骤五：构造 Authorization
+	const authorization = [
+		'q-sign-algorithm=' + qSignAlgorithm,
+		'q-ak=' + qAk,
+		'q-sign-time=' + qSignTime,
+		'q-key-time=' + qKeyTime,
+		'q-header-list=' + qHeaderList,
+		'q-url-param-list=' + qUrlParamList,
+		'q-signature=' + qSignature
 	].join('&');
-	  return authorization;
+	return authorization;
 };
-
+// 获取播放token
 function getToken({publicKey, protectContentKey, bucket, region, objectKey}) {
-    let header = {
+    const header = {
         "alg": "HS256",
         "typ": "JWT"
     }
@@ -125,7 +125,7 @@ function getToken({publicKey, protectContentKey, bucket, region, objectKey}) {
 
 
 router.post('/hls/token', (req, res, next) => {
-    const body = req.body;
+    const body = req.body || {}
     const src = body.src;
     const publicKey = body.publicKey;
     const protectContentKey = body.protectContentKey;
