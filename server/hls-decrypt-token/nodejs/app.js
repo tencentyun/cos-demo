@@ -24,7 +24,7 @@ const getAuth = function (opt) {
 	const headers = opt.headers || '';
 	const getObjectKeys = function (obj) {
 		let list = [];
-		for (const key in obj) {
+		for (let key in obj) {
 			if (obj.hasOwnProperty(key)) {
 				list.push(key);
 			}
@@ -101,7 +101,7 @@ function getToken({publicKey, protectContentKey, bucket, region, objectKey}) {
         IssuedTimeStamp: Math.floor((new Date().getTime() - 30 * 1000) / 1000),
         ProtectSchema: "rsa1024",
         PublicKey: publicKey,
-        ProtectContentKey: protectContentKey || 1,
+        ProtectContentKey: protectContentKey || 0,
         UsageLimit: 50,
         Object: objectKey,
     };
@@ -128,7 +128,7 @@ router.post('/hls/token', (req, res, next) => {
     const body = req.body || {}
     const src = body.src;
     const publicKey = body.publicKey;
-    const protectContentKey = body.protectContentKey;
+    const protectContentKey = body.protectContentKey || 0;
     const reg = /^https?:\/\/([a-z0-9-]+)\.cos\.([a-z0-9-]+)\.myqcloud\.com\/([^?]+)/;
     if (!reg.test(src)) return res.send({code: -1, message: 'src format error'});
     if (!publicKey) return res.send({code: -1, message: 'publicKey empty'});
@@ -141,7 +141,7 @@ router.post('/hls/token', (req, res, next) => {
 });
 
 // 创建临时密钥服务和用于调试的静态服务
-var app = express();
+const app = express();
 
 
 app.all('*', function (req, res, next) {
