@@ -11,9 +11,6 @@ var config = {
   durationSeconds: 1800,
   bucket: process.env.Bucket,
   region: process.env.Region,
-  // 允许操作（上传）的对象前缀，可以根据自己网站的用户登录态判断允许上传的目录，例子： user1/* 或者 * 或者a.jpg
-  // 请注意当使用 * 时，可能存在安全风险，详情请参阅：https://cloud.tencent.com/document/product/436/40265
-  allowPrefix: '*',
   // 密钥的权限列表
   allowActions: [
     // 所有 action 请看文档
@@ -93,7 +90,7 @@ app.use(function (req, res, next) {
 
 
 // 获取临时密钥
-function getSts({ condition }) {
+function getSts({ cosKey, condition }) {
   return new Promise((resolve, reject) => {
     // 获取临时密钥
     var AppId = config.bucket.substr(config.bucket.lastIndexOf('-') + 1);
@@ -106,7 +103,7 @@ function getSts({ condition }) {
           effect: 'allow',
           resource: [
             // cos相关授权路径
-            'qcs::cos:' + config.region + ':uid/' + AppId + ':' + config.bucket + '/' + config.allowPrefix,
+            'qcs::cos:' + config.region + ':uid/' + AppId + ':' + config.bucket + '/' + cosKey,
             // ci相关授权路径 按需使用
             // 'qcs::ci:' + config.region + ':uid/' + AppId + ':bucket/' + config.bucket + '/' + 'job/*',
           ],
@@ -231,6 +228,7 @@ app.all('/put-sign-limit', async function (req, res, next) {
   // 使用临时密钥传入condition来限制上传文件的content-type和content-length
   try {
     const tmpData = await getSts({
+      cosKey,
       condition: {
         // 限制上传文件小于 5MB
         'numeric_less_than_equal': {
