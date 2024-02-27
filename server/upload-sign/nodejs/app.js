@@ -200,7 +200,7 @@ app.all('/put-sign', async function (req, res, next) {
   let ak = config.secretId;
   let sk = config.secretKey;
   // 开始计算签名
-  const authorization = calcPutSign({ cosKey, ak, sk });
+  var authorization = calcPutSign({ cosKey, ak, sk });
 
   res.send({
     cosHost,
@@ -227,7 +227,7 @@ app.all('/put-sign-limit', async function (req, res, next) {
 
   // 使用临时密钥传入condition来限制上传文件的content-type和content-length
   try {
-    const tmpData = await getSts({
+    var tmpData = await getSts({
       cosKey,
       condition: {
         // 限制上传文件小于 5MB
@@ -248,7 +248,7 @@ app.all('/put-sign-limit', async function (req, res, next) {
   }
 
   // 开始计算签名
-  const authorization = calcPutSign({ cosKey, ak, sk });
+  var authorization = calcPutSign({ cosKey, ak, sk });
 
   res.send({
     cosHost,
@@ -314,7 +314,7 @@ app.all('/post-policy', async function (req, res, next) {
     ],
   });
 
-  const qSignature = calcPostSign({ policy, qKeyTime, sk });
+  var qSignature = calcPostSign({ policy, qKeyTime, sk });
 
   res.send({
     cosHost,
@@ -365,7 +365,7 @@ app.all('/post-policy-limit', async function (req, res, next) {
     ],
   });
 
-  const qSignature = calcPostSign({ policy, qKeyTime, sk });
+  var qSignature = calcPostSign({ policy, qKeyTime, sk });
 
   res.send({
     cosHost,
@@ -384,5 +384,5 @@ app.all('*', function (req, res, next) {
 });
 
 // 启动签名服务
-app.listen(3001);
-console.log('app is listening at http://127.0.0.1:3001');
+app.listen(3000);
+console.log('app is listening at http://127.0.0.1:3000');
