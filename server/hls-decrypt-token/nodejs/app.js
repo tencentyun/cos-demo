@@ -9,7 +9,7 @@ const config = {
     secretId: process.env.SecretId,
     secretKey: process.env.SecretKey,
     // 播放秘钥，可通过接口获取或在控制台查看
-    playerKey: process.env.playerKey
+    playKey: process.env.playerKey
 };
 // 计算签名
 const getAuth = function (opt) {
@@ -65,7 +65,7 @@ const getAuth = function (opt) {
 	// 新增修改，formatString 添加 encodeURIComponent
 	//pathname = encodeURIComponent(pathname);
 	// 步骤二：构成 FormatString
-	const formatString = [method, pathname, obj2str(queryParams), obj2str(headers), ''].join('\n');
+	let formatString = [method, pathname, obj2str(queryParams), obj2str(headers), ''].join('\n');
 	formatString = Buffer.from(formatString, 'utf8');
 	// 步骤三：计算 StringToSign
 	const sha1Algo = crypto.createHash('sha1');
@@ -112,8 +112,8 @@ function getToken({publicKey, protectContentKey, bucket, region, objectKey}) {
     let Signature = base64Url.encode(hash);
     let token = Header + '.' + PayLoad + '.' + Signature
     let authorization = getAuth({
-        secretId: config.SecretId,
-        secretKey: config.SecretKey,
+        secretId: config.secretId,
+        secretKey: config.secretKey,
         method: 'get',
         pathname: `/${objectKey}`,
         params: {
@@ -137,7 +137,7 @@ router.post('/hls/token', (req, res, next) => {
     const [bucket, region, objectKey] = src.match(reg) || [];
     
     const {token, authorization} = getToken({publicKey, protectContentKey, bucket, region, objectKey}, res)
-    res.send({code: 0, message: 'ok', data: {token, authorization}});
+    res.send({code: 0, message: 'ok', token, authorization});
 });
 
 // 创建临时密钥服务和用于调试的静态服务
