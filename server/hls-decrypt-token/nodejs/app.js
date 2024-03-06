@@ -86,7 +86,8 @@ const getAuth = function (opt) {
 	].join('&');
 	return authorization;
 };
-// 获取播放token
+
+// 获取播放 token
 function getToken({publicKey, protectContentKey, bucket, region, objectKey}) {
     const header = {
         "alg": "HS256",
@@ -123,7 +124,7 @@ function getToken({publicKey, protectContentKey, bucket, region, objectKey}) {
     return {token, authorization};
 }
 
-
+// 提供接口，给前端/App播放器，获取播放 token
 router.post('/hls/token', (req, res, next) => {
     const body = req.body || {}
     const src = body.src;
