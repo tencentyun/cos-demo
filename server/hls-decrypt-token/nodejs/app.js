@@ -65,7 +65,7 @@ const getAuth = function (opt) {
 	// 新增修改，formatString 添加 encodeURIComponent
 	//pathname = encodeURIComponent(pathname);
 	// 步骤二：构成 FormatString
-	const formatString = [method, pathname, obj2str(queryParams), obj2str(headers), ''].join('\n');
+	let formatString = [method, pathname, obj2str(queryParams), obj2str(headers), ''].join('\n');
 	formatString = Buffer.from(formatString, 'utf8');
 	// 步骤三：计算 StringToSign
 	const sha1Algo = crypto.createHash('sha1');
@@ -124,8 +124,11 @@ function getToken({publicKey, protectContentKey, bucket, region, objectKey}) {
     return {token, authorization};
 }
 
+// 创建临时密钥服务和用于调试的静态服务
+const app = express();
+
 // 提供接口，给前端/App播放器，获取播放 token
-router.post('/hls/token', (req, res, next) => {
+app.post('/hls/token', (req, res, next) => {
     const body = req.body || {}
     const src = body.src;
     const publicKey = body.publicKey;
@@ -142,13 +145,10 @@ router.post('/hls/token', (req, res, next) => {
 
     // 解析 url
     const [bucket, region, objectKey] = src.match(reg) || [];
-    
+
     const {token, authorization} = getToken({publicKey, protectContentKey, bucket, region, objectKey}, res)
     res.send({code: 0, message: 'ok', data: {token, authorization}});
 });
-
-// 创建临时密钥服务和用于调试的静态服务
-const app = express();
 
 
 app.all('*', function (req, res, next) {
