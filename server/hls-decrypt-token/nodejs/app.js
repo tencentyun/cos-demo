@@ -8,7 +8,7 @@ const config = {
     // 获取腾讯云密钥，建议使用限定权限的子用户的密钥 https://console.cloud.tencent.com/cam/capi
     secretId: process.env.SecretId,
     secretKey: process.env.SecretKey,
-    // 播放秘钥，可通过接口获取或在控制台查看
+    // 播放秘钥，可在媒体处理模块获取 https://console.cloud.tencent.com/cos/bucket?bucket=xxxx-100000&region=ap-xxx&type=ci&anchorType=video
     playerKey: process.env.playerKey
 };
 // 计算签名
@@ -134,7 +134,7 @@ router.post('/hls/token', (req, res, next) => {
     if (!publicKey) return res.send({code: -1, message: 'publicKey empty'});
 
     // 解析 url
-    const [bucket, region, objectKey] = src.match(reg) || [];
+    const ["", bucket, region, objectKey] = src.match(reg) || [];
     
     const {token, authorization} = getToken({publicKey, protectContentKey, bucket, region, objectKey}, res)
     res.send({code: 0, message: 'ok', data: {token, authorization}});
