@@ -10,8 +10,7 @@ const config = {
     secretId: process.env.SecretId,
     secretKey: process.env.SecretKey,
     // 播放秘钥，可通过到控制台（存储桶详情->数据处理->媒体处理）获取填写到这里，也可以调用万象 API 获取
-    playerKey: process.env.playerKey,
-    
+    playKey: process.env.playerKey,
 };
 
 // 获取播放 token
@@ -65,10 +64,10 @@ app.post('/hls/token', (req, res, next) => {
     if (!publicKey) return res.send({code: -1, message: 'publicKey empty'});
 
     // 解析 url
-    const [bucket, region, objectKey] = src.match(reg) || [];
+    const [, bucket, region, objectKey] = src.match(reg) || [];
 
     const {token, authorization} = getToken({publicKey, protectContentKey, bucket, region, objectKey}, res)
-    res.send({code: 0, message: 'ok', data: {token, authorization}});
+    res.send({code: 0, message: 'ok', token, authorization});
 });
 
 
