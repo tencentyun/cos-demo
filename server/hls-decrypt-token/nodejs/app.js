@@ -11,8 +11,7 @@ const config = {
     secretKey: process.env.SecretKey,
     // 播放秘钥，可通过到控制台（存储桶详情->数据处理->媒体处理）获取填写到这里，也可以调用万象 API 获取
     playerKey: process.env.playerKey,
-    // 默认不要允许标准加密播放，如在某些特殊场景需要用HLS标准加密(例如小程序里播放)，可以改为 true，去掉下面的限制判断并做好来源限制只允许小程序来源。
-    allowStandardEncrypt: false,
+    
 };
 
 // 获取播放 token
@@ -59,13 +58,6 @@ app.post('/hls/token', (req, res, next) => {
     const src = body.src;
     const publicKey = body.publicKey;
     const protectContentKey = parseInt(body.protectContentKey || 0);
-
-    // 代码示例只允许 protectContentKey 传 1，原因：如果允许传入 0 播放流程会走 HLS 标准加密会有风险。
-    // 如在某些特殊场景需要用HLS标准加密(例如小程序里播放)，可以去掉下面的限制判断并做好来源限制只允许小程序来源。
-    if (!config.allowStandardEncrypt && !protectContentKey) {
-        res.status(400);
-        return res.send({code: -1, message: 'protectContentKey=0 not allowed'});
-    }
 
     // src 链接校验
     const reg = /^https?:\/\/([a-z0-9-]+)\.cos\.([a-z0-9-]+)\.myqcloud\.com\/([^?]+)/;
