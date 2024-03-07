@@ -10,7 +10,7 @@ const config = {
     secretId: process.env.SecretId,
     secretKey: process.env.SecretKey,
     // 播放秘钥，可通过到控制台（存储桶详情->数据处理->媒体处理）获取填写到这里，也可以调用万象 API 获取
-    playKey: process.env.playerKey,
+    playKey: process.env.playKey,
 };
 
 // 获取播放 token
