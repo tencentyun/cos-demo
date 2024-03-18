@@ -57,7 +57,7 @@
 
         // 步骤1 获取签名sign
         // 传入cos文件路径，服务端计算签名，将签名作为返回结果，格式如下：{code: 0, data: { sign }}
-        // 参考服务端示例：https://github.com/tencentyun/cos-demo/server/token-refresh-document-preview/
+        // 参考服务端示例：https://github.com/tencentyun/cos-demo/tree/main/server/token-refresh-document-preview/nodejs
         const signRes = JSON.parse(await REQUEST('http://127.0.0.1:3000/getSign', 'get', { filePath }));
         // 从返回结果中拿到签名
         const sign = signRes.data.sign || '';
@@ -79,7 +79,7 @@
 
             // 传入cos文件地址、tokenuid，服务端会先计算签名，再发起 getObject 请求获取 Token 与 Token过期时间戳，并将其作为返回结果
             // 返回结果格式如下：{code: 0, data: { Token, TokenExpireTime }}
-            // 参考服务端示例：https://github.com/tencentyun/cos-demo/server/token-refresh-document-preview/
+            // 参考服务端示例：https://github.com/tencentyun/cos-demo/tree/main/server/token-refresh-document-preview/nodejs
             const tokenRes = JSON.parse(await REQUEST('http://127.0.0.1:3000/refreshToken', 'get', { Bucket, Region, filePath, tokenuid }));
 
             const TokenExpireTime = tokenRes.data.TokenExpireTime || "";
