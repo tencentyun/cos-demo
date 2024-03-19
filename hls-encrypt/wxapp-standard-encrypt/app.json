@@ -1,0 +1,8 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "COS HLS 加密视频播放",
+  }
+}
