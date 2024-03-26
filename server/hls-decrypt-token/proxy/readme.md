@@ -9,7 +9,7 @@
 1. 去腾讯云控制台获取 SecretId、SecretKey [获取密钥](https://console.cloud.tencent.com/capi)
 2. 去 COS 控制台存储桶获取播放密钥 [COS控制台](https://console.cloud.tencent.com/cos/bucket)
 ![img.png](https://qcloudimg.tencent-cloud.cn/image/document/fbd702b3bdd7f49a2ed6eb15fbe9187b.png)
-3. 参照最佳实践，创建 HLS 加密转码视频，[文档链接](https://cloud.tencent.com/document/product/460/59291)
+4. 参照最佳实践，创建 HLS 加密转码视频，[文档链接](https://cloud.tencent.com/document/product/460/59291)
 
 ### 二、创建 HLS 加密视频
 1. 登录 对象存储控制台。
