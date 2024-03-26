@@ -24,7 +24,7 @@
 ![加密转码模板2](https://qcloudimg.tencent-cloud.cn/image/document/e5c7bc1c41cd0d4ce592b056d2400cfe.png)
 9. 完成 HLS 加密模板配置，后续选用此模板 配置工作流 或 配置任务 即可实现加密视频。
 10. 当前实例里，可以通过创建转码任务，选中刚才创建的 HLS 加密转码模板，对已上传的 mp4 文件转码，转码完后即可得到加密后的 m3u8 和 ts 文件。
-![](![task.png](task.png))
+![task.png](task.png)
 
 ### 三、启动本地解密代理服务
 
