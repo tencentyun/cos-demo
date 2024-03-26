@@ -1,24 +1,21 @@
 # 服务端解密demo
 
 
-# toolbox
+# node代理解密服务
 
-> A Vue.js project
 
-## Build Setup
+## 使用步骤
 
 ``` bash
-# install dependencies
+# 安装依赖
 npm install
 
-# serve with hot reload at localhost:8080
+# 启动前端服务
 http-server -c
 
-# build for production with minification
-npm run build
+# 启动node服务
+node app.js
 
-# build for production and view the bundle analyzer report
-npm run build --report
+# 打开浏览器查看结果
+
 ```
-
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
