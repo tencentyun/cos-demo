@@ -7,9 +7,8 @@
 ### 一、前期准备
 
 1. 去腾讯云控制台获取 SecretId、SecretKey [获取密钥](https://console.cloud.tencent.com/capi)
-2. 去 COS 控制台存储桶获取播放密钥 [COS控制台](https://console.cloud.tencent.com/cos/bucket)
+2. 去 COS 控制台存储桶获取播放密钥 playKey [COS控制台](https://console.cloud.tencent.com/cos/bucket)
 ![img.png](playKey.png)
-4. 参照最佳实践，创建 HLS 加密转码视频，[文档链接](https://cloud.tencent.com/document/product/460/59291)
 
 ### 二、创建 HLS 加密视频
 1. 登录 对象存储控制台。
@@ -28,6 +27,8 @@
 
 ### 三、启动本地解密代理服务
 
+1. 对步骤一里拿到的 SecretId、SecretKey、playKey 放到 app.js 里
+2. 安装依赖，并启动解密服务
 ``` bash
 npm install # 安装依赖
 node app.js # 启动node服务
@@ -35,6 +36,8 @@ node app.js # 启动node服务
 
 ### 四、在播放端使用该代理服务播放视频
 
+正式环境是在客户端的 html 里实现调用解密代理服务，当前示例为了方便体验，在同一个服务里，起了静态文件、token 服务。
+尝试播放视频：
 1. 修改 client/index.html 里的 m3u8Url，改为刚才步骤二里在控制台转码好的加密视频 .m3u8 文件，复制文件链接。
 2. 浏览器打开 http://127.0.0.1:3000 可以看到视频能正常播放，经过代理服务提供的 getM3u8 和 getKey 接口，完成了 HLS 加密视频正常播放。
 
