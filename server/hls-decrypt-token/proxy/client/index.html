@@ -1,0 +1,64 @@
+<html>
+    <head>
+        <title>hls加密视频播放体验</title>
+    </head>
+    <body>
+        <video id="video" controls></video>
+
+        <script src="./cos_hls.js"></script>
+        <script src="./hls.js"></script>
+        <script src="./jsencrypt.js"></script>
+
+        <script>
+            var encryptor = new JSEncrypt();
+            var privateKey = encryptor.getPrivateKey();
+            var publicKey = encryptor.getPublicKey();
+            var m3u8Url = 'https://ci-h5-bj-1258125638.cos.ap-beijing.myqcloud.com/hls/BigBuckBunny.m3u8';
+            // 新建xhr对象，进行请求
+            var xhr = new XMLHttpRequest();
+            xhr.withCredentials = true;
+            // /hls/token为自定义请求地址，用户可自自定义
+            xhr.open('POST', `http://127.0.0.1:3000/hls/token`, true);
+            xhr.setRequestHeader('Content-Type', 'application/json')
+            // 请求成功返回authorization 和 token
+            xhr.onload = function () {
+                var r = JSON.parse(xhr.responseText);
+                var authorization = r.authorization
+                var token = r.token
+                // 新建xhr对象，进行请求
+                var xhr1 = new XMLHttpRequest();
+                xhr1.withCredentials = true;
+                // /hls/token为自定义请求地址，用户可自自定义
+                var signedM3u8Url = `${m3u8Url}?ci-process=pm3u8&expires=43200&tokenType=JwtToken&token=${token}&${authorization}`;
+                let playUrl = `http://127.0.0.1:3000/hls/getM3u8?url=${encodeURIComponent(signedM3u8Url)}&privateKey=${encodeURIComponent(privateKey)}&_=${Date.now()}`
+                var video = document.getElementById('video');
+
+                if (Hls.isSupported()) {
+                    var hls = new Hls({});
+                    hls.loadSource(playUrl);
+                    hls.token = token
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+                        video.muted = true;
+                        video.play();
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = playUrl;
+                    video.addEventListener('canplay', function () {
+                        video.play();
+                    });
+                }
+            }
+            xhr.onerror = function (err) {
+                console.log(err)
+            };
+            // node服务所需要的参数，已从sdk获取，不需要用户填写
+            var data = {
+                src: m3u8Url,
+                publicKey: window.btoa(publicKey),
+                protectContentKey: 1
+            };
+            xhr.send(JSON.stringify(data));
+        </script>
+    </body>
+</html>
