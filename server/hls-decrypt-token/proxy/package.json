@@ -4,7 +4,7 @@
     "description": "",
     "main": "app.js",
     "scripts": {
-        "dev": "node app.js"
+        "start": "node app.js"
     },
     "author": "tinnazhang",
     "license": "ISC",

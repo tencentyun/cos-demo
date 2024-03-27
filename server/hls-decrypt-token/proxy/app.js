@@ -8,13 +8,16 @@ const axios = require('axios')
 const path = require("path");
 const NodeRSA = require('node-rsa');
 
+
 // 配置参数
 const config = {
     // 获取腾讯云密钥，建议使用限定权限的子用户的密钥 https://console.cloud.tencent.com/cam/capi
     secretId: process.env.SecretId,
-    secretKey: process.env.SecretKey,
+    secretKey: process.env.SecretId,
     // 播放秘钥，可通过到控制台（存储桶详情->数据处理->媒体处理）获取填写到这里，也可以调用万象 API 获取
-    playKey: process.env.playKey,
+    playKey: process.env.PlayKey,
+    bucket: 'ci-1250000000',
+    region: 'ap-chongqing',
 };
 
 
@@ -67,17 +70,16 @@ app.post('/hls/token', (req, res, next) => {
     const protectContentKey = parseInt(body.protectContentKey || 0);
 
     // src 链接校验
-    const reg = /^https?:\/\/([a-z0-9-]+)\.cos\.([a-z0-9-]+)\.myqcloud\.com\/([^?]+)/;
+    const reg = /^https?:\/\/[^/]+\/([^?]+)/;
     if (!reg.test(src)) return res.send({code: -1, message: 'src format error'});
     if (!publicKey) return res.send({code: -1, message: 'publicKey empty'});
 
     // 解析 url
-    const [, bucket, region, objectKey] = src.match(reg) || [];
+    const objectKey = (src.match(reg) || [])[1] || '';
+    const { bucket, region } = config;
+    const { token, authorization } = getToken({publicKey, protectContentKey, bucket, region, objectKey}, res)
 
-    const {token, authorization} = getToken({publicKey, protectContentKey, bucket, region, objectKey}, res)
-
-    let finalSrc = `${src}?ci-process=pm3u8&expires=43200&tokenType=JwtToken&${authorization}&token=${token}`
-    res.send({code: 0, message: 'ok', token, authorization, finalSrc});
+    res.send({code: 0, message: 'ok', token, authorization});
 });
 
 const privateKeyMap = {}
@@ -93,7 +95,6 @@ app.get('/hls/getM3u8', (req, res, next) => {
         method: 'get',
     }).then(function (data) {
         // 拼接当前代理 url
-        const proxyUrlPrefix = 'http://127.0.0.1:3000';
         // 拼接当前代理 url
         const dirPrefix = signedMeu8Url.replace(/\/[^/]+(\?.*)?$/, '');
         const domainPrefix = signedMeu8Url.replace(/^(https?:\/\/[^/]+).*$/, '$1');
@@ -101,7 +102,7 @@ app.get('/hls/getM3u8', (req, res, next) => {
         // 替换 X-KEY url 的路径为代理路径
         let m3u8Content = data.data;
         m3u8Content = m3u8Content.replace(/(#EXT-X-KEY:METHOD=AES-128,URI=")([^"\n\r]+)(",IV=)/g, (str, s1, realKeyUrl, s3) => {
-            const proxyM3u8Url = `${proxyUrlPrefix}/hls/getKey?url=${encodeURIComponent(realKeyUrl)}&keyId=${keyId}`
+            const proxyM3u8Url = `http://127.0.0.1:3000/hls/getKey?url=${encodeURIComponent(realKeyUrl)}&keyId=${keyId}`
             return s1 + proxyM3u8Url + s3;
         });
 
@@ -117,6 +118,8 @@ app.get('/hls/getM3u8', (req, res, next) => {
         });
         res.header('content-type', 'application/x-mpegURL')
         res.send(m3u8Content);
+    }).catch(err => {
+        res.send({code: -1, message: 'get m3u8 failed'});
     });
 
 });

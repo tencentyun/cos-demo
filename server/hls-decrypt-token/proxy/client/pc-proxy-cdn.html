@@ -5,7 +5,7 @@
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>HLS加密视频播放体验</title>
+    <title>HLS 加密视频播放体验 - CDN 加速</title>
     <style>
         h1 {
             font-weight: normal;
@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<h1>HLS加密视频播放体验</h1>
+<h1>HLS 加密视频播放体验 - CDN 加速</h1>
 <video id="video" controls width="600"></video>
 
 <script src="cos_hls.js"></script>
@@ -25,24 +25,27 @@
     var encryptor = new JSEncrypt();
     var privateKey = encryptor.getPrivateKey();
     var publicKey = encryptor.getPublicKey();
-    var m3u8Url = 'https://ci-h5-1258125638.cos.ap-beijing.myqcloud.com/hls/bunny.m3u8';
+    var m3u8Url = 'https://cdn.example.com/hls/encrypt/bunny.m3u8';
     // 新建xhr对象，进行请求
     var xhr = new XMLHttpRequest();
     xhr.withCredentials = true;
-    // /hls/token为自定义请求地址，用户可自自定义
-    xhr.open('POST', `http://127.0.0.1:3000/hls/token`, true);
+    // /hls/token 为自定义请求地址，用户可自自定义
+    xhr.open('POST', `/hls/token`, true);
     xhr.setRequestHeader('Content-Type', 'application/json')
     // 请求成功返回authorization 和 token
     xhr.onload = function () {
-        var r = JSON.parse(xhr.responseText);
-        var authorization = r.authorization
-        var token = r.token
-        // 新建xhr对象，进行请求
-        var xhr1 = new XMLHttpRequest();
-        xhr1.withCredentials = true;
-        // /hls/token为自定义请求地址，用户可自自定义
-        var signedM3u8Url = `${m3u8Url}?ci-process=pm3u8&expires=43200&tokenType=JwtToken&token=${token}&${authorization}`;
-        let playUrl = `http://127.0.0.1:3000/hls/getM3u8?url=${encodeURIComponent(signedM3u8Url)}&privateKey=${encodeURIComponent(privateKey)}&_=${Date.now()}`
+        // 读取返回值
+        var r = {};
+        try {
+            r = JSON.parse(xhr.responseText);
+        } catch (e) {}
+        var authorization = r.authorization;
+        var token = r.token;
+        if (!authorization || !token) return console.error('获取 token、authorization 失败');
+
+        // /hls/token 为自定义请求地址，用户可自自定义
+        var signedM3u8Url = `${m3u8Url}?ci-process=pm3u8&expires=43200&tokenType=JwtToken&token=${token}&_=${Date.now()}`;
+        let playUrl = `/hls/getM3u8?url=${encodeURIComponent(signedM3u8Url)}&privateKey=${encodeURIComponent(privateKey)}&_=${Date.now()}`
         var video = document.getElementById('video');
 
         if (Hls.isSupported()) {
@@ -62,7 +65,7 @@
         }
     }
     xhr.onerror = function (err) {
-        console.log(err)
+        console.error('token 获取失败', err);
     };
     // node服务所需要的参数，已从sdk获取，不需要用户填写
     var data = {
@@ -72,6 +75,5 @@
     };
     xhr.send(JSON.stringify(data));
 </script>
-
 </body>
 </html>
