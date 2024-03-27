@@ -140,7 +140,7 @@ app.get('/hls/getKey', (req, res, next) => {
 
 });
 
-app.use(express.static(path.resolve(__dirname, 'www')));
+app.use(express.static(path.resolve(__dirname, 'client')));
 
 const keyDecode = function (source, keyId) {
     const privateKey = privateKeyMap[keyId];
