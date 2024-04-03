@@ -1,0 +1,17 @@
+{
+  "name": "cos-hls-player-proxy",
+  "version": "0.1.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "carsonxu",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "express": "^4.14.0",
+    "body-parser": "^1.20.2",
+    "node-rsa": "^1.1.1"
+  }
+}

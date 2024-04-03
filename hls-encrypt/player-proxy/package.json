@@ -1,0 +1,17 @@
+{
+  "name": "cos-hls-player-proxy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "tinnazhang",
+  "license": "ISC",
+  "dependencies": {
+    "base64-url": "^2.3.3",
+    "cos-hls-player-proxy": "^0.1.0",
+    "cos-nodejs-sdk-v5": "^2.13.3",
+    "express": "^4.14.0"
+  }
+}
