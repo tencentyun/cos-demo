@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>HLS 边转边播示例</title>
+    <style>
+        h1 {font-weight: normal}
+    </style>
+</head>
+<body>
+
+<h1>HLS 边转边播示例</h1>
+
+<div style="margin-bottom:10px">
+    <button id="submit">生成边转边播视频</button>
+</div>
+<video id="video" controls width="600"></video>
+
+<script src="./js/cos-js-sdk-v5.min.js"></script>
+<script src="./js/xml2json.js"></script>
+<script src="./js/hls.js"></script>
+
+<script>
+    var config = {
+        Bucket: 'ci-1250000000',
+        Region: 'ap-beijing'
+    }
+    var cosHost = `${config.Bucket}.cos.${config.Region}.myqcloud.com`;
+    var ciHost = `${config.Bucket}.ci.${config.Region}.myqcloud.com`;
+    var cos = new COS({
+        SecretId: 'xx',
+        SecretKey: 'xx',
+    });
+
+    var ajax = function (method, url, data, callback) {
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+        xhr.open(method, url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json')
+        xhr.onload = function () {
+            // 读取返回值
+            var r = {};
+            try {
+                r = JSON.parse(xhr.responseText);
+            } catch (e) {
+            }
+            callback(null, r);
+        }
+        xhr.onerror = function (err) {
+            console.error('token 获取失败', err);
+            callback(err);
+        };
+        var body = data ? JSON.stringify(data) : '';
+        xhr.send(body);
+    };
+
+    var playVideo = (m3u8Key) => {
+        const src = `https://${cosHost}/${m3u8Key}.m3u8`;
+        // 新建xhr对象，进行请求
+        ajax('POST', '/hls/getAuthorization', {src: src}, function (err, r) {
+            if (err) return callback('get token error');
+            var playUrl = r.signedM3u8Url;
+            var video = document.getElementById('video');
+
+            if (Hls.isSupported()) {
+                hls = new Hls({});
+                hls.loadSource(playUrl);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+                    video.muted = true;
+                    video.play();
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = playUrl;
+                video.addEventListener('canplay', function () {
+                    video.play();
+                });
+            }
+        });
+    }
+
+    var waitForTask = function (jobId) {
+        let interval = null;
+        var getResult = (jobId) => {
+            // 查询任务状态及参数格式，可参考 https://cloud.tencent.com/document/product/460/84765
+            cos.request({
+                Bucket: config.Bucket,
+                Region: config.Region,
+                Method: 'GET',
+                Url: 'https://' + ciHost + `/jobs/${jobId}`,
+                Key: `/jobs/${jobId}` /** 固定值，必须 */
+            }, (err, data) => {
+                if (err) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = '生成边转边播视频'
+
+                    console.log(JSON.stringify(err));
+                    return;
+                }
+                if (data.Response.JobsDetail.State === 'Success') {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = '生成边转边播视频'
+
+                    let result = data?.Response?.JobsDetail?.Operation?.Output?.Object
+                    result.split('.')
+                    playVideo(result.split('.')[0])
+                    clearInterval(interval)
+                } else if (data.Response.JobsDetail.State === 'Failed') {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = '生成边转边播视频'
+                    clearInterval(interval)
+                }
+            })
+        };
+        interval = setInterval(function () {
+            getResult(jobId)
+        }, 500);
+    };
+
+    var transcodeAndPlay = function () {
+        submitBtn.disabled = true;
+        submitBtn.innerText = '生成视频中...'
+
+        var m3u8Key = 'hls/transferring/' + Date.now() + '/bunny.m3u8';
+        let param = {
+            "Request": {
+                "Tag": "GeneratePlayList", /* 创建任务的Tag Watermark ,必须*/
+                "Input": {
+                    "Object": 'data/media/bunny.mp4', /* 需要的视频文件，存储桶里的路径，必须 */
+                    // "Object": 'data/media/douyin.mp4', /* 需要的视频文件，存储桶里的路径，必须 */
+                },
+                "Operation": {
+                    "Output": {
+                        "Region": config.Region, /* 存储桶的地域，必须 */
+                        "Bucket": config.Bucket, /* 存储结果的存储桶，必须 */
+                        "Object": m3u8Key,
+                    },
+                    "Transcode": {
+                        "Container": {
+                            "Format": 'hls',
+                            "ClipConfig": {
+                                "Duration": 5
+                            }
+                        },
+                        "Video": {
+                            "Codec": 'H.264',
+                            'Width': '1080',
+                            'Height': '1920',
+                            'Bitrate': 25
+                        }
+                    }
+                }
+            }
+        };
+
+        var body = COS.util.json2xml(param);
+        cos.request({
+            Bucket: config.Bucket,
+            Region: config.Region,
+            Method: 'POST',
+            Url: 'https://' + ciHost + '/jobs',
+            Key: '/jobs', /** 固定值，必须 */
+            ContentType: 'application/xml', /** 固定值，必须 */
+            Body: body
+        }, (err, data) => {
+            if (err) {
+                submitBtn.disabled = false;
+                console.log(JSON.stringify(err));
+                return;
+            }
+            // 查询任务状态
+            if (data?.Response?.JobsDetail?.State === 'Submitted') {
+                waitForTask(data.Response.JobsDetail.JobId);
+            } else {
+                console.error('task submit error');
+            }
+        })
+    };
+
+    const submitBtn = document.getElementById('submit');
+    submitBtn.onclick = transcodeAndPlay;
+</script>
+</body>
+</html>

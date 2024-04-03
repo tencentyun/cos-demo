@@ -1,8 +1,8 @@
 {
   "name": "cos-hls-player-proxy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
-  "main": "app.js",
+  "main": "cos-hls-player-proxy.js",
   "scripts": {
     "start": "node app.js"
   },
