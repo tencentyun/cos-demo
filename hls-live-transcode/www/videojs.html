@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>HLS 私有加密播放示例 - video.js</title>
+    <link href="https://vjs.zencdn.net/8.11.8/video-js.css" rel="stylesheet" />
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: "Microsoft YaHei UI",serif;
+        }
+        h1 {
+            font-weight: normal;
+        }
+        video {
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<h1>HLS 边转边播+私有加密示例 - video.js</h1>
+<video id="container" class="video-js" controls muted width="400" height="300" data-setup='{}'></video>
+
+<script src="https://vjs.zencdn.net/8.11.8/video.js"></script>
+<script src="common/jsencrypt.js"></script>
+<script src="common/cos_hls.js"></script>
+<script>
+    var m3u8Url = 'https://wwj-cq-1253960454.cos.ap-chongqing.myqcloud.com/live/a.m3u8?ciprocess=getplaylist';
+    var ajax = function (method, url, data, callback) {
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+        xhr.open(method, url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json')
+        xhr.onload = function () {
+            // 读取返回值
+            var r = {};
+            try {
+                r = JSON.parse(xhr.responseText);
+            } catch (e) {
+            }
+            callback(null, r);
+        }
+        xhr.onerror = function (err) {
+            console.error('token 获取失败', err);
+            callback(err);
+        };
+        var body = data ? JSON.stringify(data) : '';
+        xhr.send(body);
+    };
+    var playVideo = (meu8Url) => {
+        cosHls.play({
+            container: '#container',
+            playerType: 'video.js',
+            src: meu8Url,
+            getToken(opt, callback) {
+                var data = {
+                    src: m3u8Url,
+                    publicKey: window.btoa(opt.publicKey),
+                    protectContentKey: opt.protectContentKey,
+                };
+                ajax('POST', '/hls/token', data, function (err, r) {
+                    if (err) return cosnole.error(err);
+                    var authorization = r.authorization
+                    var token = r.token
+                    callback(null, {authorization, token});
+                });
+            },
+            getInstance(hls) {
+                console.log(hls)
+            },
+        })
+    }
+    playVideo(m3u8Url);
+</script>
+
+</body>
+</html>
