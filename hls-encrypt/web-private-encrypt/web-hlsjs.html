@@ -17,13 +17,14 @@
 <script src="cos_hls.js"></script>
 
 <h1>HLS 私有加密播放示例 - HLS.js</h1>
-<video id="container" width="600" controls></video>
+<video id="container" width="600" controls muted autoplay></video>
 
 <script>
     cosHls.play({
         container: '#container',
         playerType: 'hls.js',
-        src: 'https://ci-1250000000.cos.ap-chongqing.myqcloud.com/hls/encrypt/bunny.m3u8',
+        // src: 'https://ci-1250000000.cos.ap-chongqing.myqcloud.com/hls/encrypt/bunny.m3u8?ci-process=getplaylist', // 私有加密+边转边播
+        src: 'https://ci-1250000000.cos.ap-chongqing.myqcloud.com/hls/encrypt/bunny.m3u8?ci-process=pm3u8', // 仅私有加密
         getToken(opt, callback) {
             var publicKey = opt.publicKey;
             var src = opt.src;

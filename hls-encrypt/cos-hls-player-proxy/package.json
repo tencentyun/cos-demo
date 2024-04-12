@@ -1,10 +1,14 @@
 {
   "name": "cos-hls-player-proxy",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "",
   "main": "cos-hls-player-proxy.js",
   "scripts": {
     "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tencentyun/cos-demo/tree/main/hls-encrypt/cos-hls-player-proxy"
   },
   "author": "carsonxu",
   "license": "ISC",

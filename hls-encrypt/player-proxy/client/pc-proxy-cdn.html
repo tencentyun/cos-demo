@@ -17,11 +17,12 @@
 <h1>HLS 加密视频播放体验 - CDN 加速</h1>
 <video id="video" controls width="600"></video>
 
-<script src="cos_hls.js"></script>
 <script src="hls.js"></script>
+<script src="cos_hls.js"></script>
 
 <script>
-    var m3u8Url = 'https://cdn.example.com/hls/encrypt/bunny.m3u8';
+    // var m3u8Url = 'https://cdn.example.com/hls/encrypt/bunny.m3u8?ci-process=getplaylist'; // 私有加密+边转边播
+    var m3u8Url = 'https://cdn.example.com/hls/encrypt/bunny.m3u8?ci-process=pm3u8'; // 仅私有加密
     var ajax = function (method, url, data, callback) {
         var xhr = new XMLHttpRequest();
         xhr.withCredentials = true;
@@ -44,6 +45,7 @@
         xhr.send(body);
     };
 
+    // 调用本地解密代理服务 /hls/getPublicKey 接口获取公钥 publicKey 和 keyId
     ajax('POST', '/hls/getPublicKey', null, function (err, data1) {
         var publicKey = data1.publicKey;
         var keyId = data1.keyId;
@@ -52,13 +54,14 @@
             publicKey: window.btoa(publicKey),
             protectContentKey: 1
         };
+        // 这个接口在当前示例调用的是本地解密代理服务，线上版本需要调用服务端的 /hls/token
         ajax('POST', '/hls/token', params, function (err, data2) {
             var authorization = data2.authorization;
             var token = data2.token;
             if (!authorization || !token) return console.error('获取 token、authorization 失败');
 
             // /hls/token 为自定义请求地址，用户可自自定义
-            var signedM3u8Url = `${m3u8Url}?ci-process=pm3u8&expires=43200&tokenType=JwtToken&token=${token}&_=${Date.now()}`;
+            var signedM3u8Url = `${m3u8Url}&expires=43200&tokenType=JwtToken&token=${token}&_=${Date.now()}`;
             var playUrl = `/hls/getM3u8?url=${encodeURIComponent(signedM3u8Url)}&keyId=${keyId}&_=${Date.now()}`
             var video = document.getElementById('video');
 

@@ -1,5 +1,11 @@
 # COS HLS 解密代理服务示例
 
+## 示例文件说明
+
+cos-hls-player-proxy.js // 最终用于被 pc 代码引用
+demo-pc-release.js // 作为代码示例，pc 代码调用示例
+demo-local-proxy.js // 可用于本地体验流程
+
 ## 体验步骤
 
 ### 一、前期准备

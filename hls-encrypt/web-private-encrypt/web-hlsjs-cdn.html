@@ -17,13 +17,14 @@
 <script src="cos_hls.js"></script>
 
 <h1>HLS 私有加密播放示例 - HLS.js - CDN 加速</h1>
-<video class="video" width="600" id="video" controls></video>
+<video class="video" id="video" width="600" controls muted autoplay></video>
 
 <script>
     cosHls.play({
         container: 'video',
         playerType: 'hls.js',
-        src: 'https://cdn.example.com/hls/encrypt/bunny.m3u8',
+        // src: 'https://ci.carsonxu.com/hls/encrypt/bunny.m3u8?ci-process=getplaylist', // 私有加密+边转边播
+        src: 'https://ci.carsonxu.com/hls/encrypt/bunny.m3u8?ci-process=pm3u8', // 仅私有加密
         useCDN: true,
         getToken(opt, callback) {
             var publicKey = opt.publicKey;

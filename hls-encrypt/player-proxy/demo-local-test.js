@@ -1,4 +1,7 @@
-// HLS加解密服务例子
+/**
+ * 当前示例仅用于本地验证流程
+ * 在 PC 端正式使用，参考 demo-pc-release.js 里调用 cos-hls-player-proxy.js
+ */
 const COS = require('cos-nodejs-sdk-v5');
 const base64Url = require('base64-url');
 const express = require('express');
@@ -19,7 +22,21 @@ const config = {
 };
 
 // 获取播放 token
-function getToken({publicKey, protectContentKey, bucket, region, objectKey}) {
+const srcReg = /^https?:\/\/([^/]+)\/([^?]+)/;
+const ciHostReg = /^[^.]+\.ci\.[^.]+\.myqcloud\.com$/;
+function getToken({publicKey, protectContentKey, bucket, region, src}) {
+    const m = src.match(srcReg);
+    const srcHost = m[1];
+    const pathKey = m[2];
+    const query = {};
+    const isCiHost = ciHostReg.test(srcHost);
+    src.replace(/^([^?]+)(\?([^#]+))?(#.*)?$/, '$3').split('&').forEach(item => {
+        const index = item.indexOf('=');
+        const key = index > -1 ? item.slice(0, index) : item;
+        let val = index > -1 ? item.slice(index + 1) : '';
+        query[key] = decodeURIComponent(val);
+    });
+    let objectKey = isCiHost ? query.object : pathKey;
     const header = {
         "alg": "HS256",
         "typ": "JWT"
@@ -43,19 +60,25 @@ function getToken({publicKey, protectContentKey, bucket, region, objectKey}) {
     let hash = crypto.createHmac('sha256', config.playKey).update(data).digest();
     let Signature = base64Url.encode(hash);
     let token = Header + '.' + PayLoad + '.' + Signature
-    let authorization = COS.getAuthorization({
+    const authOpt = {
         SecretId: config.secretId,
         SecretKey: config.secretKey,
         Method: 'get',
-        Pathname: `/${objectKey}`,
-        Query: {'ci-process': 'pm3u8'},
-    });
+        Pathname: '/' + pathKey,
+    };
+    if (!isCiHost) {
+        const ciProcess = query['ci-process'] ||'pm3u8';
+        authOpt.Query = {'ci-process': ciProcess};
+    }
+    let authorization = COS.getAuthorization(authOpt);
     return {token, authorization};
 }
 
-playerProxy.start(function (err, data) {
+playerProxy.start({port: 3000}, function (err, data) {
     if (err) return console.error(err);
+    console.log('try it on browser ' + data.url + '/pc-proxy.html');
     console.log('try it on browser ' + data.url + '/pc-proxy-cdn.html');
+    console.log('try it on browser ' + data.url + '/pc-proxy-ci.html');
 
     // 取出 express 实例
     const app = data.app;
@@ -67,15 +90,24 @@ playerProxy.start(function (err, data) {
         const publicKey = body.publicKey;
         const protectContentKey = parseInt(body.protectContentKey || 0);
 
+        // 如在某些特殊场景需要用HLS标准加密(例如小程序里播放/iOSWebview)，可以去掉下面的限制判断并做好来源限制只允许小程序来源。
+        // 代码示例只允许 protectContentKey 传 1，原因：如果允许传入 0 播放流程会走 HLS 标准加密会有风险。
+        const userAgent = req.headers['user-agent'] || '';
+        const uaWhiteList = ['Safari', 'wechatdevtools', 'MiniProgramEnv'];
+        const isUaAllow = uaWhiteList.some(item => userAgent.includes(item));
+        // 只有白名单的浏览器，才能走标准加密
+        if (!protectContentKey && !isUaAllow) {
+            res.status(400);
+            return res.send({code: -1, message: 'protectContentKey=0 not allowed'});
+        }
+
         // src 链接校验
-        const reg = /^https?:\/\/[^/]+\/([^?]+)/;
-        if (!reg.test(src)) return res.send({code: -1, message: 'src format error'});
+        if (!src || !srcReg.test(src)) return res.send({code: -1, message: 'src format error'});
         if (!publicKey) return res.send({code: -1, message: 'publicKey empty'});
 
         // 解析 url
-        const objectKey = (src.match(reg) || [])[1] || '';
         const { bucket, region } = config;
-        const { token, authorization } = getToken({publicKey, protectContentKey, bucket, region, objectKey}, res)
+    const { token, authorization } = getToken({publicKey, protectContentKey, bucket, region, src}, res)
 
         res.send({code: 0, message: 'ok', token, authorization});
     });

@@ -9,11 +9,11 @@ const base64Url = require('base64-url');
 // 配置参数
 const config = {
     // 获取腾讯云密钥，建议使用限定权限的子用户的密钥 https://console.cloud.tencent.com/cam/capi
-    secretId: 'xxx',
-    secretKey: 'xxx',
+    secretId: process.env.SecretId,
+    secretKey: process.env.SecretKey,
     // 播放秘钥，可通过到控制台（存储桶详情->数据处理->媒体处理）获取填写到这里，也可以调用万象 API 获取
-    playKey: 'xxx',
-    bucket: 'wwj-cq-1253960454',
+    playKey: process.env.PlayKey,
+    bucket: 'ci-1250000000',
     region: 'ap-chongqing',
 };
 
@@ -82,6 +82,17 @@ app.post('/hls/token', (req, res, next) => {
     const src = body.src;
     const publicKey = body.publicKey;
     const protectContentKey = parseInt(body.protectContentKey || 0);
+
+    // 如在某些特殊场景需要用HLS标准加密(例如小程序里播放/iOSWebview)，可以去掉下面的限制判断并做好来源限制只允许小程序来源。
+    // 代码示例只允许 protectContentKey 传 1，原因：如果允许传入 0 播放流程会走 HLS 标准加密会有风险。
+    const userAgent = req.headers['user-agent'] || '';
+    const uaWhiteList = ['Safari', 'wechatdevtools', 'MiniProgramEnv'];
+    const isUaAllow = uaWhiteList.some(item => userAgent.includes(item));
+    // 只有白名单的浏览器，才能走标准加密
+    if (!protectContentKey && !isUaAllow) {
+        res.status(400);
+        return res.send({code: -1, message: 'protectContentKey=0 not allowed'});
+    }
 
     // src 链接校验
     if (!src || !srcReg.test(src)) return res.send({code: -1, message: 'src format error'});

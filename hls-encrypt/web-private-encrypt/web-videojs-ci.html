@@ -1,32 +1,41 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>TCPlayer HLS私有加密播放示例</title>
+    <title>Video.js HLS私有加密播放示例</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link href="https://vjs.zencdn.net/8.11.8/video-js.css" rel="stylesheet" />
     <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: "Microsoft YaHei UI",serif;
+        }
         h1 {
             font-weight: normal;
+        }
+        video {
+            border: 1px solid #ddd;
         }
     </style>
 </head>
 <body>
 
-<h1>TCPlayer HLS私有加密播放示例</h1>
+<h1>HLS私有加密播放示例 - Video.js - ci 域名</h1>
 
-<video id="container" width="600" preload="auto" muted playsinline webkit-playsinline></video>
-<link href="https://web.sdk.qcloud.com/player/tcplayer/release/v4.2.2/tcplayer.min.css" rel="stylesheet"/>
-<script src="https://web.sdk.qcloud.com/player/tcplayer/release/v4.2.2/libs/hls.min.0.13.2m.js"></script>
-<script src="https://web.sdk.qcloud.com/player/tcplayer/release/v4.2.2/tcplayer.v4.2.2.min.js"></script>
+<video id="container" class="video-js" width="600" controls muted autoplay data-setup='{}'></video>
+<script src="https://vjs.zencdn.net/8.11.8/video.js"></script>
 <script src="jsencrypt.js"></script>
 <script src="cos_hls.js"></script>
 <script>
     cosHls.play({
         container: '#container',
-        playerType: 'tcplayer',
-        src: 'https://ci-1250000000.cos.ap-chongqing.myqcloud.com/hls/encrypt/bunny.m3u8',
+        playerType: 'video.js',
+        // src: `https://ci-1250000000.ci.ap-chongqing.myqcloud.com/getplaylist?object=${encodeURIComponent('hls/encrypt/bunny.m3u8')}`, // 私有加密+边转边播
+        src: `https://ci-1250000000.ci.ap-chongqing.myqcloud.com/pm3u8?object=${encodeURIComponent('hls/encrypt/bunny.m3u8')}`, // 仅私有加密
         getToken(opt, callback) {
             var publicKey = opt.publicKey;
             var src = opt.src;
