@@ -43,11 +43,11 @@
         var body = data ? JSON.stringify(data) : '';
         xhr.send(body);
     };
-    var playVideo = (meu8Url) => {
+    var playVideo = (m3u8Url) => {
         cosHls.play({
             container: '#video',
             playerType: 'hls.js',
-            src: meu8Url,
+            src: m3u8Url,
             getToken(opt, callback) {
                 var data = {
                     src: m3u8Url,
