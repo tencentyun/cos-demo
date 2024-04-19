@@ -28,7 +28,7 @@
         playerType: 'tcplayer',
         // src: 'https://cdn.example.com/hls/encrypt/bunny.m3u8?ci-process=getplaylist', // 私有加密+边转边播
         src: 'https://cdn.example.com/hls/encrypt/bunny.m3u8?ci-process=pm3u8', // 仅私有加密
-        useCDN: true,
+        useCdn: true,
         getToken(opt, callback) {
             var publicKey = opt.publicKey;
             var src = opt.src;
