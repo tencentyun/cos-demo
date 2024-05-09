@@ -95,7 +95,7 @@ playerProxy.start({port: 3000}, function (err, data) {
         const userAgent = req.headers['user-agent'] || '';
         const uaWhiteList = ['Safari', 'wechatdevtools', 'MiniProgramEnv'];
         const isUaAllow = uaWhiteList.some(item => userAgent.includes(item));
-        // 只有白名单的浏览器，才能走标准加密
+        // 只有白名单的浏览器，才放通 protectContentKey:0，走标准加密
         if (!protectContentKey && !isUaAllow) {
             res.status(400);
             return res.send({code: -1, message: 'protectContentKey=0 not allowed'});
