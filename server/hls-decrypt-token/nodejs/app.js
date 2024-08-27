@@ -77,12 +77,12 @@ app.post('/hls/token', (req, res, next) => {
     const publicKey = body.publicKey;
     const protectContentKey = parseInt(body.protectContentKey || 0);
 
-    // 如在某些特殊场景需要用HLS标准加密(例如小程序里播放/iOSWebview)，可以去掉下面的限制判断并做好来源限制只允许小程序来源。
-    // 代码示例只允许 protectContentKey 传 1，原因：如果允许传入 0 播放流程会走 HLS 标准加密会有风险。
+    // 限制只允许部分 UserAgent 来源的请求走标准加密
+    // 不支持 HLS 私有加密视频场景，需要降级走 HLS 标准加密流程(例如小程序、iOS Safari 和 iOS Webview)。
     const userAgent = req.headers['user-agent'] || '';
     const uaWhiteList = ['Safari', 'wechatdevtools', 'MiniProgramEnv'];
     const isUaAllow = uaWhiteList.some(item => userAgent.includes(item));
-    // 只有白名单的浏览器，才能走标准加密
+    // 只有白名单的浏览器，才放通 protectContentKey:0，走标准加密
     if (!protectContentKey && !isUaAllow) {
         res.status(400);
         return res.send({code: -1, message: 'protectContentKey=0 not allowed'});
