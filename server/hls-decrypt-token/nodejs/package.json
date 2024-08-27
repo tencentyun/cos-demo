@@ -8,9 +8,9 @@
   "license": "ISC",
   "dependencies": {
     "base64-url": "^2.3.3",
+    "body-parser": "^1.20.2",
     "cos-nodejs-sdk-v5": "^2.13.3",
-    "express": "^4.14.0",
-    "crypto": "^1.0.1"
+    "crypto": "^1.0.1",
+    "express": "^4.14.0"
   }
-
 }
