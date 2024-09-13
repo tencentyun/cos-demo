@@ -44,7 +44,7 @@
             var data = {
                 src: src,
                 publicKey: window.btoa(publicKey),
-                protectContentKey: 1,
+                protectContentKey: opt.protectContentKey,
             };
             xhr.send(JSON.stringify(data));
 
