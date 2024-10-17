@@ -52,6 +52,11 @@ app.all('/refreshToken', function (req, res, next) {
     // 从请求中获取参数
     const { query: { Bucket, Region, filePath, tokenuid }} = req;
 
+    // 限制入参格式
+    if (!/^[a-z0-9-]+$/.test(Bucket) || !/^[a-z0-9-]+$/.test(Region) || !filePath.startsWith('/')) {
+        return res.send({code: -1, message: 'params format error'});
+    }
+
     // 根据 Bucket, Region, filePath 拼接文件完整路径
     const objectUrl = `https://${Bucket}.cos.${Region}.myqcloud.com${filePath}`;
     const pathname = filePath.substring(1);
