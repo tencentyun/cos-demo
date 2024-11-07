@@ -74,23 +74,24 @@
         const { PreviewUrl, Token, TokenExpireTime } = info;
 
         // 步骤3 定义refreshToken方法，请求服务端refreshToken接口获取 Token
-        const refreshToken = async () => {
-            console.log('refreshToken：-----------------refresh token', new Date());
-
-            // 传入cos文件地址、tokenuid，服务端会先计算签名，再发起 getObject 请求获取 Token 与 Token过期时间戳，并将其作为返回结果
-            // 返回结果格式如下：{code: 0, data: { Token, TokenExpireTime }}
-            // 参考服务端示例：https://github.com/tencentyun/cos-demo/tree/main/server/token-refresh-document-preview/nodejs
-            const tokenRes = JSON.parse(await REQUEST('http://127.0.0.1:3000/refreshToken', 'get', { Bucket, Region, filePath, tokenuid }));
-
-            const TokenExpireTime = tokenRes.data.TokenExpireTime || "";
-            // 根据 Token过期时间戳(精确到秒) 计算 Token过期时间(毫秒为单位)
-            const timeout = (TokenExpireTime - Math.round(new Date().getTime() / 1000)) * 1000;
-
-            const tokenObj = {
-                token: tokenRes.data.Token || "",
-                timeout //设置 Token过期时间
-            }
-            return  tokenObj;
+        const refreshToken = () => {
+            return new Promise(function (resolve, reject) {
+                console.log('refreshToken：-----------------refresh token', new Date());
+                // 传入cos文件地址、tokenuid，服务端会先计算签名，再发起 getObject 请求获取 Token 与 Token过期时间戳，并将其作为返回结果
+                // 返回结果格式如下：{code: 0, data: { Token, TokenExpireTime }}
+                // 参考服务端示例：https://github.com/tencentyun/cos-demo/tree/main/server/token-refresh-document-preview/nodejs
+                const tokenRes = JSON.parse(await REQUEST('http://127.0.0.1:3000/refreshToken', 'get', { Bucket, Region, filePath, tokenuid }));
+    
+                const TokenExpireTime = tokenRes.data.TokenExpireTime || "";
+                // 根据 Token过期时间戳(精确到秒) 计算 Token过期时间(毫秒为单位)
+                const timeout = (TokenExpireTime - Math.round(new Date().getTime() / 1000)) * 1000;
+    
+                const tokenObj = {
+                    token: tokenRes.data.Token || "",
+                    timeout //设置 Token过期时间
+                }
+                resolve(tokenObj);
+            });
         }
 
         // 步骤4 初始化预览
