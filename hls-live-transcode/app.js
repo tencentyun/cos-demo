@@ -7,7 +7,7 @@ const base64Url = require('base64-url');
 
 // config 中的内容请替换成您自己的配置
 const config = {
-    Bucket: 'ci-h5-bj-1251902136',                    // 存储桶，必须
+    Bucket: 'test-1250000000',                    // 存储桶，必须
     Region: 'ap-beijing',                             // 存储桶所在地域，必须字段，目前仅支持北京和上海
     // 获取腾讯云密钥，建议使用限定权限的子用户的密钥 https://console.cloud.tencent.com/cam/capi
     SecretId: 'xxx',                   // 推荐使用环境变量获取；用户的 SecretId，建议使用子账号密钥，授权遵循最小权限指引，降低使用风险。
