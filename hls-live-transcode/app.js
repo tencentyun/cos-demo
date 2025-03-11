@@ -1,6 +1,5 @@
 const COS = require('cos-nodejs-sdk-v5');
 const express = require('express');
-const cors = require('cors');
 const bodyParser = require('body-parser');
 const crypto = require("crypto");
 const base64Url = require('base64-url');
