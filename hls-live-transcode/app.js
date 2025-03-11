@@ -277,5 +277,5 @@ app.all('*', function (req, res, next) {
 });
 
 // 启动签名服务
-app.listen(3001);
-console.log('app is listening at http://127.0.0.1:3001');
+app.listen(3000);
+console.log('app is listening at http://127.0.0.1:3000');
