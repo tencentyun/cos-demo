@@ -1,0 +1,133 @@
+
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>TCPlayer HLS私有加密-边转边播-动态水印示例</title>
+    <style>
+        h1 {
+            font-weight: normal;
+        }
+        input {
+            padding: 8px;
+            margin-right: 10px;
+            width: 450px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+<h1>TCPlayer HLS私有加密-边转边播-动态水印示例</h1>
+
+<div class="controller" style="margin-bottom:20px">
+    <p>
+        <input type="text" id="sourceKey" placeholder="请输入视频源文件对象键，如：video/test.mp4" value="hls/watermark-playlist/bunny.mp4"><button onclick="handleCreatePlayUrl()">创建边转边播链接</button><br/>
+    </p>
+    <p>
+        <input type="text" id="playUrl" placeholder="请输入边转边播的 m3u8 的预签名 url"><button onclick="handlePlay()">播放</button>
+    </p>
+    <div id="msg"></div>
+</div>
+
+<video id="container" width="600" preload="auto" muted playsinline webkit-playsinline></video>
+<link href="https://web.sdk.qcloud.com/player/tcplayer/release/v5.1.0/tcplayer.min.css" rel="stylesheet">
+<script src="https://web.sdk.qcloud.com/player/tcplayer/release/v5.1.0/libs/hls.min.1.1.7.js"></script>
+<script src="https://web.sdk.qcloud.com/player/tcplayer/release/v4.5.0/tcplayer.v4.5.0.min.js"></script>
+<script src="common/jsencrypt.js"></script>
+<script src="common/cos_hls.js"></script>
+<script>
+    function showMsg(msg, color) {
+        document.getElementById('msg').innerHTML = `<span style="color:${color}">${msg}</span>`;
+        console.log(msg);
+    }
+    function handleCreatePlayUrl() {
+        showMsg('正在获取边转边播 url...', 'gray');
+        var sourceKey = document.getElementById("sourceKey").value;
+        var data = {sourceKey: sourceKey};
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+        xhr.open('POST', `/hls/playUrl`, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function () {
+            var r = JSON.parse(xhr.responseText);
+            document.getElementById("playUrl").value = r.playUrl;
+            showMsg('获取播放链接成功，请点击播放按钮', 'green');
+        };
+        xhr.onerror = function () {
+            showMsg('获取播放链接失败', 'red');
+        };
+        xhr.send(JSON.stringify(data));
+    }
+    function handlePlay() {
+        showMsg('正在加载播放器...', 'gray');
+        // 获取输入框的值
+        var playUrl = document.getElementById("playUrl").value;
+        if (!playUrl) return;
+        // 播放
+        cosHls.play({
+            container: '#container',
+            playerType: 'tcplayer',
+            playerOptions: {
+                // 如果是 tcplayer 需要传入 licenseUrl，参数说明 https://cloud.tencent.com/document/product/881/30818#.E5.87.86.E5.A4.87.E5.B7.A5.E4.BD.9C
+                // licenseUrl: '',
+                plugins:{
+                    DynamicWatermark: {
+                        type: 'text',
+                        speed: 0.2,
+                        content: "腾讯云数据万象",
+                        opacity: 0.7,
+                        fontSize: '20px',
+                        color: '#000'
+                    }
+                },
+            },
+            src: playUrl,
+            getToken(opt, callback) {
+                showMsg('正在获取 HLS 私有加密播放 token...', 'gray');
+                var publicKey = opt.publicKey;
+                var src = opt.src;
+                var xhr = new XMLHttpRequest();
+                xhr.withCredentials = true;
+                xhr.open('POST', '/hls/token', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onload = function () {
+                    var r = JSON.parse(xhr.responseText);
+                    var authorization = r.authorization
+                    var token = r.token
+                    showMsg('获取 Token 成功，开始播放视频', 'green');
+                    callback(null, {authorization, token});
+                };
+                xhr.onerror = function () {
+                    showMsg('获取播放 Token 失败', 'red');
+                };
+                var data = {
+                    src: src,
+                    publicKey: window.btoa(publicKey),
+                    protectContentKey: opt.protectContentKey,
+                };
+                xhr.send(JSON.stringify(data));
+            },
+            getInstance(player) {
+                console.log(player)
+            },
+        });
+    }
+</script>
+
+</body>
+</html>
+
