@@ -60,9 +60,16 @@
         xhr.open('POST', `/hls/playUrl`, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.onload = function () {
-            var r = JSON.parse(xhr.responseText);
-            document.getElementById("playUrl").value = r.playUrl;
-            showMsg('获取播放链接成功，请点击播放按钮', 'green');
+            var result;
+            try {
+                result = JSON.parse(xhr.responseText);
+            } catch(e) {}
+            if (result.playUrl) {
+                document.getElementById("playUrl").value = result.playUrl;
+                showMsg('获取播放链接成功，请点击播放按钮', 'green');
+            } else {
+                showMsg('获取播放链接失败：' + result.message, 'red');
+            }
         };
         xhr.onerror = function () {
             showMsg('获取播放链接失败', 'red');

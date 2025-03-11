@@ -253,12 +253,14 @@ app.post('/hls/playUrl', (req, res, next) => {
     // 启动
     generatePlayList(sourceKey, function (jobId, err) {
         if(err) {
-            console.log('[error] ', err)
+            res.send({code: -1, message: 'generatePlayList error'});
+            console.error('[error] ', err)
         } else {
             // 查询任务是否执行完成
             pollQueryJobStatus(jobId, function (output, err2) {
                 if(err2) {
-                    console.log('[error] ', err2)
+                    console.error('[error] ', err2)
+                    res.send({code: -1, message: 'pollQueryJobStatus error'});
                 } else {
                     // 获取播放体验链接地址
                     const playUrl = getPlayList(output);
