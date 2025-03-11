@@ -1,8 +1,10 @@
 // HLS加解密服务例子
 const COS = require('cos-nodejs-sdk-v5');
 const base64Url = require('base64-url');
+const bodyParser = require('body-parser');
 const express = require('express');
 const crypto = require('crypto');
+const pathLib = require("path");
 
 // 配置参数
 const config = {
@@ -18,6 +20,7 @@ const config = {
 // 创建临时密钥服务和用于调试的静态服务
 const app = express();
 
+app.use(express.static(pathLib.resolve(__dirname, './www'))); // 对项目跟路径放开静态访问
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
