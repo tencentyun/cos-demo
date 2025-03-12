@@ -89,7 +89,7 @@ const generatePlayList = function (sourceKey, callback) {
     const targetPrefix = `${sourceKey.replace(/\.[^.]+$/, '')}-transcoding-${Date.now()}/${fileName}`;
     const targetKeyTpl = targetPrefix + '.${ext}';
     console.log('目标边转边播文件：', targetPrefix + '.m3u8');
-    const host = config.Bucket + '.ci.' + config.Region + '.myqcloud.com/jobs';
+    const host = config.SourceBucket + '.ci.' + config.SourceRegion + '.myqcloud.com/jobs';
     const url = 'https://' + host;
     const body = COS.util.json2xml({
         Request: {
@@ -118,8 +118,8 @@ const generatePlayList = function (sourceKey, callback) {
                     }
                 },
                 Output: {
-                    Region: config.Region, // 地域名，目前仅支持北京和上海
-                    Bucket: config.Bucket, // 存储桶名称
+                    Region: config.TargetRegion, // 地域名，目前仅支持北京和上海
+                    Bucket: config.TargetBucket, // 存储桶名称
                     Object: targetKeyTpl // 文件输出路径
                 }
             }
@@ -152,7 +152,7 @@ const pollQueryJobStatus = function (jobId, callback) {
     const maxRetries = 60;
     const interval = 3000;
     let timeoutId = null;
-    const host = config.Bucket + '.ci.' + config.Region + '.myqcloud.com/jobs/' + jobId;
+    const host = config.SourceBucket + '.ci.' + config.SourceRegion + '.myqcloud.com/jobs/' + jobId;
     const url = 'https://' + host;
 
     let retryCount = 0;
@@ -241,7 +241,7 @@ app.post('/hls/token', (req, res, next) => {
     if (!publicKey) return res.send({code: -1, message: 'publicKey empty'});
 
     // 解析 url
-    const { token, authorization } = getToken({publicKey, protectContentKey, bucket: config.Bucket, region: config.Region, src}, res)
+    const { token, authorization } = getToken({publicKey, protectContentKey, bucket: config.TargetBucket, region: config.TargetRegion, src}, res)
 
     res.send({code: 0, message: 'ok', token, authorization});
 });
@@ -253,21 +253,21 @@ app.post('/hls/playUrl', (req, res, next) => {
     // 启动
     generatePlayList(sourceKey, function (jobId, err) {
         if(err) {
+            console.error('[error] ', err);
             res.send({code: -1, message: 'generatePlayList error'});
-            console.error('[error] ', err)
-        } else {
-            // 查询任务是否执行完成
-            pollQueryJobStatus(jobId, function (output, err2) {
-                if(err2) {
-                    console.error('[error] ', err2)
-                    res.send({code: -1, message: 'pollQueryJobStatus error'});
-                } else {
-                    // 获取播放体验链接地址
-                    const playUrl = getPlayList(output);
-                    res.send({code: 0, message: 'ok', playUrl});
-                }
-            })
+            return;
         }
+        // 查询任务是否执行完成
+        pollQueryJobStatus(jobId, function (output, err2) {
+            if(err2) {
+                console.error('[error] ', err2)
+                res.send({code: -1, message: 'pollQueryJobStatus error'});
+                return;
+            }
+            // 获取播放体验链接地址
+            const playUrl = getPlayList(output);
+            res.send({code: 0, message: 'ok', playUrl});
+        });
     });
 });
 
