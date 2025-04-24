@@ -3,6 +3,7 @@
  * https://github.com/souche-koumakan/crc64_ecma182.js/blob/master/dist/crc.js#L5
  */
 
+(function () {
 // The Module object: Our interface to the outside world. We import
 // and export values on it, and do the work to get that through
 // closure compiler if necessary. There are various ways Module can be used:
@@ -17850,7 +17851,6 @@ run();
 
 (function () {
   var binding = Module;
-  var fs = require('fs');
 
   var raw = {
     crc64: binding.cwrap('crc64', 'null', [ 'number', 'number', 'number' ]),
@@ -17880,15 +17880,49 @@ run();
     return str;
   }
 
+  function str2ab(str) {
+      var bytes = [];
+      var len, c, i;
+      len = str.length;
+      for (i = 0; i < len; i++) {
+          c = str.charCodeAt(i);
+          if (c >= 0x010000 && c <= 0x10FFFF) {
+              bytes.push(((c >> 18) & 0x07) | 0xF0);
+              bytes.push(((c >> 12) & 0x3F) | 0x80);
+              bytes.push(((c >> 6) & 0x3F) | 0x80);
+              bytes.push((c & 0x3F) | 0x80);
+          } else if (c >= 0x000800 && c <= 0x00FFFF) {
+              bytes.push(((c >> 12) & 0x0F) | 0xE0);
+              bytes.push(((c >> 6) & 0x3F) | 0x80);
+              bytes.push((c & 0x3F) | 0x80);
+          } else if (c >= 0x000080 && c <= 0x0007FF) {
+              bytes.push(((c >> 6) & 0x1F) | 0xC0);
+              bytes.push((c & 0x3F) | 0x80);
+          } else {
+              bytes.push(c & 0xFF);
+          }
+      }
+      var array = new Int8Array(bytes.length);
+      for (i in bytes) {
+          array[i] = bytes[i];
+      }
+      return array.buffer;
+  }
+
+  function size(buf) {
+      return buf instanceof ArrayBuffer ? buf.byteLength : buf.length;
+  }
+
   function buffToPtr(buff) {
-    if(typeof buff === 'string') {
-      buff = Buffer.from(buff);
-    } else if(!Buffer.isBuffer(buff)) {
+    if (typeof buff === 'string') {
+      buff = str2ab(buff);
+    } else if(!buff instanceof ArrayBuffer) {
       throw new Error('Invalid buffer type.');
     }
 
-    var buffPtr = binding._malloc(buff.length);
-    binding.writeArrayToMemory(buff, buffPtr);
+    const buffPtr = binding._malloc(size(buff));
+    var arr = new Uint8Array(buff);
+    binding.writeArrayToMemory(arr, buffPtr);
 
     return buffPtr;
   }
@@ -17899,13 +17933,12 @@ run();
       throw new Error('Invlid previous value.');
     }
 
-    if (typeof buff === 'string') buff = Buffer.from(buff);
+    if (typeof buff === 'string') buff = str2ab(buff);
+    const prevPtr = strToUint64Ptr(prev);
+    const buffPtr = buffToPtr(buff);
 
-    var prevPtr = strToUint64Ptr(prev);
-    var buffPtr = buffToPtr(buff);
-
-    raw.crc64(prevPtr, buffPtr, buff.length);
-    var ret = uint64PtrToStr(prevPtr);
+    raw.crc64(prevPtr, buffPtr, size(buff));
+    const ret = uint64PtrToStr(prevPtr);
 
     binding._free(prevPtr);
     binding._free(buffPtr);
@@ -17913,47 +17946,37 @@ run();
     return ret;
   };
 
-  var crc64File = function(opt, callback) {
-    var readOpt;
-    var filePath;
-    if (typeof opt === 'string') filePath = opt;
-    else {
-      readOpt = {
-        start: opt.start,
-        end: opt.end,
+  var crc64Blob = function (file, callback, progress) {
+    var chunkSize = 1024 * 1024 * 2;
+    var fileSize = file.size;
+    var prev = '0';
+    var canceled = false;
+    var next = function (index) {
+      var start = index * chunkSize;
+      var end = Math.min(start + chunkSize, fileSize);
+      if (canceled) return;
+      if (start >= fileSize) return callback(null, prev)
+      var reader = new FileReader();
+      reader.onload = function () {
+        var buf = this.result;
+        try {
+          prev = CRC64.crc64(buf, prev);
+        } catch (err) {
+          !canceled && callback && callback(err);
+        }
+        !canceled && progress && progress(Math.round(end / fileSize * 100) / 100)
+        next(index + 1);
       };
-      filePath = opt.filePath;
-    }
-    var errored = false;
-    var stream = fs.createReadStream(filePath, readOpt);
-    var crcPtr = strToUint64Ptr('0');
-    var crcPtrFreed = false;
-    stream.on('error', function(err) {
-      errored = true;
-      stream.destroy();
-      if(!crcPtrFreed) {
-        binding._free(crcPtr);
-        crcPtrFreed = true;
-      }
-      return callback(err);
-    });
-
-    stream.on('data', function(chunk) {
-      var buffPtr = buffToPtr(chunk);
-      raw.crc64(crcPtr, buffPtr, chunk.length);
-      binding._free(buffPtr);
-    });
-    stream.on('end', function() {
-      if(errored) return;
-
-      var ret = uint64PtrToStr(crcPtr);
-      if(!crcPtrFreed) {
-        binding._free(crcPtr);
-        crcPtrFreed = true;
-      }
-
-      return callback(undefined, ret);
-    });
+      var blob = file.slice(start, end);
+      reader.readAsArrayBuffer(blob);
+    };
+    next(0);
+    var ret = {
+      cancel: function () {
+        canceled = true;
+      },
+    };
+    return ret;
   };
 
   var crc64Calculator = function(opt, callback) {
@@ -18084,15 +18107,14 @@ run();
     return crc1.toString();
   };
 
-  module.exports = {
+  window.CRC64 = {
     crc64: crc64,
     crc64Calculator: crc64Calculator,
     crc64Concat: crc64Concat,
     crc64Combine: crc64Combine,
-    crc64File: crc64File,
+    crc64Blob: crc64Blob,
   };
 
 })()
 
-
-
+})();

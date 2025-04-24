@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document</title>
+</head>
+<body>
+
+<script src="./crc64.js"></script>
+<script>
+    const { crc64, crc64Calculator, crc64Concat, crc64Combine, crc64Blob } = window.CRC64;
+    function str2ab(str) {
+        var bytes = [];
+        var len, c, i;
+        len = str.length;
+        for (i = 0; i < len; i++) {
+            c = str.charCodeAt(i);
+            if (c >= 0x010000 && c <= 0x10FFFF) {
+                bytes.push(((c >> 18) & 0x07) | 0xF0);
+                bytes.push(((c >> 12) & 0x3F) | 0x80);
+                bytes.push(((c >> 6) & 0x3F) | 0x80);
+                bytes.push((c & 0x3F) | 0x80);
+            } else if (c >= 0x000800 && c <= 0x00FFFF) {
+                bytes.push(((c >> 12) & 0x0F) | 0xE0);
+                bytes.push(((c >> 6) & 0x3F) | 0x80);
+                bytes.push((c & 0x3F) | 0x80);
+            } else if (c >= 0x000080 && c <= 0x0007FF) {
+                bytes.push(((c >> 6) & 0x1F) | 0xC0);
+                bytes.push((c & 0x3F) | 0x80);
+            } else {
+                bytes.push(c & 0xFF);
+            }
+        }
+        var array = new Int8Array(bytes.length);
+        for (i in bytes) {
+            array[i] = bytes[i];
+        }
+        return array.buffer;
+    }
+
+    // 1. crc64 计算 字符串、Buffer
+    // 123456789 的 crc64 值为 11051210869376104954
+    // 中文 的 crc64 值为 16371802884590399230
+    console.log(
+        '1. crc64 123456789:',
+        crc64('123456789'),
+        crc64(str2ab('123456789')),
+        '中文:',
+        crc64('中文'),
+        crc64(str2ab('123456789')),
+    );
+
+    // 2. crc64 计算 字符串、Buffer
+    // 123456789 的 crc64 值为 11051210869376104954
+    // 中文 的 crc64 值为 16371802884590399230
+    const calculator = crc64Calculator();
+    const hash2 = calculator.update('123')
+        .update('456')
+        .update('789')
+        .digest('789');
+    console.log('2. crc64 123456789:', hash2);
+
+    // 4. crc64Concat 追加 crc64 计算，计算后 7138526414024387452
+    const hash3 = crc64Concat(crc64('123456'), crc64('789'), 3);
+    console.log('3. crc64Concat 123456789:', hash3);
+
+    // 4. crc64Combine 合并 crc64 数组，合并值为 7138526414024387452
+    const hash4 = crc64Combine([
+        {hash: crc64('12'), size: 2},
+        {hash: crc64('345'), size: 3},
+        {hash: crc64('6789'), size: 4},
+    ]);
+    console.log('4. crc64Combine 123456789:', hash4);
+
+
+    // 5. crc64Blob 计算文件 crc64.js 值 7138526414024387452
+    crc64Blob(new Blob(['123456789']), (err, hash5) => {
+        console.log('5. blob:', hash5);
+    });
+</script>
+
+</body>
+</html>
