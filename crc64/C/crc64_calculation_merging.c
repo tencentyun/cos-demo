@@ -1,101 +1,179 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
-// 定义 CRC64 多项式
-#define CRC64_POLY 0xc96c5795d7870f42
+// CRC64 参数 (ECMA-182)
+#define CRC64_POLY 0xC96C5795D7870F42ULL
+#define CRC64_INIT 0xFFFFFFFFFFFFFFFFULL
+#define CRC64_XOR_OUT 0xFFFFFFFFFFFFFFFFULL
+#define GF2_DIM 64
 
-// 生成 CRC64 表
-uint64_t crc64_table[256];
+// 预计算表
+static uint64_t crc_table[256];
 
-void generate_crc64_table() {
+// CRC 计算上下文
+typedef struct {
+    uint64_t crc;
+} CRC64_CTX;
+
+// 生成预计算表
+static void generate_table() {
     for (int i = 0; i < 256; i++) {
-        uint64_t crc = (uint64_t)i;
+        uint64_t crc = i;
         for (int j = 0; j < 8; j++) {
-            if (crc & 1) {
+            if (crc & 1)
                 crc = (crc >> 1) ^ CRC64_POLY;
-            } else {
+            else
                 crc >>= 1;
-            }
         }
-        crc64_table[i] = crc;
+        crc_table[i] = crc;
     }
 }
 
-// 计算数据的 CRC64 值
-uint64_t data_crc64(const uint8_t *data, size_t length) {
-    uint64_t crc = 0;
-    for (size_t i = 0; i < length; i++) {
-        crc = (crc >> 8) ^ crc64_table[(crc ^ data[i]) & 0xff];
+// 初始化上下文
+void crc64_init(CRC64_CTX *ctx) {
+    ctx->crc = CRC64_INIT;
+    // 确保表只生成一次
+    static int table_generated = 0;
+    if (!table_generated) {
+        generate_table();
+        table_generated = 1;
     }
-    return crc;
 }
 
-// 计算文件的 CRC64 值
-uint64_t file_crc64(const char *path) {
-    FILE *file = fopen(path, "rb");
-    if (file == NULL) {
-        return 0;
+// 更新数据块
+void crc64_update(CRC64_CTX *ctx, const void *data, size_t len) {
+    const uint8_t *bytes = (const uint8_t *)data;
+    for (size_t i = 0; i < len; i++) {
+        uint8_t idx = (ctx->crc ^ bytes[i]) & 0xFF;
+        ctx->crc = (ctx->crc >> 8) ^ crc_table[idx];
     }
-
-    uint64_t crc = 0;
-    uint8_t buffer[4096];
-    size_t bytes_read;
-
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
-        crc = data_crc64(buffer, bytes_read) ^ (crc << 8);
-    }
-
-    fclose(file);
-    return crc;
 }
 
-// 合并两个 CRC64 值
-uint64_t combine_crc64(uint64_t crc1, uint64_t crc2, size_t len2) {
-    uint64_t delta[8];
-    for (int i = 0; i < 8; i++) {
-        delta[i] = 1ULL << (56 - i);
-        for (int j = 0; j < 8; j++) {
-            if (delta[i] & (1ULL << 63)) {
-                delta[i] = (delta[i] << 1) ^ CRC64_POLY;
-            } else {
-                delta[i] = delta[i] << 1;
-            }
-        }
+// 获取最终结果
+uint64_t crc64_final(CRC64_CTX *ctx) {
+    return ctx->crc ^ CRC64_XOR_OUT;
+}
+
+// GF(2) 矩阵运算
+static uint64_t gf2_matrix_times(uint64_t *mat, uint64_t vec) {
+    uint64_t sum = 0;
+    int idx = 0;
+    while (vec) {
+        if (vec & 1)
+            sum ^= mat[idx];
+        vec >>= 1;
+        idx++;
+    }
+    return sum;
+}
+
+static void gf2_matrix_square(uint64_t *square, uint64_t *mat) {
+    for (int n = 0; n < GF2_DIM; n++)
+        square[n] = gf2_matrix_times(mat, mat[n]);
+}
+
+// 合并两个 CRC 值
+uint64_t crc64_combine(uint64_t crc1, uint64_t crc2, uint64_t len2) {
+    if (len2 == 0) return crc1;
+
+    // 调整初始状态
+    crc1 ^= (CRC64_INIT ^ CRC64_XOR_OUT);
+
+    // 初始化 GF(2) 矩阵
+    uint64_t even[GF2_DIM] = {0};
+    uint64_t odd[GF2_DIM] = {0};
+
+    // 构建反转多项式矩阵
+    odd[0] = CRC64_POLY;
+    uint64_t row = 1;
+    for (int n = 1; n < GF2_DIM; n++) {
+        odd[n] = row;
+        row <<= 1;
     }
 
-    for (size_t i = 0; i < len2; i++) {
-        for (int j = 0; j < 8; j++) {
-            if (crc1 & (1ULL << 63)) {
-                crc1 = (crc1 << 1) ^ CRC64_POLY;
-            } else {
-                crc1 = crc1 << 1;
-            }
-        }
+    // 矩阵平方运算
+    gf2_matrix_square(even, odd);
+    gf2_matrix_square(odd, even);
+
+    // 合并运算
+    while (1) {
+        gf2_matrix_square(even, odd);
+        if (len2 & 1)
+            crc1 = gf2_matrix_times(even, crc1);
+        len2 >>= 1;
+        if (len2 == 0) break;
+
+        gf2_matrix_square(odd, even);
+        if (len2 & 1)
+            crc1 = gf2_matrix_times(odd, crc1);
+        len2 >>= 1;
+        if (len2 == 0) break;
     }
 
     return crc1 ^ crc2;
 }
 
+// 文件校验函数
+uint64_t file_crc(const char *path) {
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        fprintf(stderr, "文件打开失败: %s\n", path);
+        exit(EXIT_FAILURE);
+    }
+
+    CRC64_CTX ctx;
+    crc64_init(&ctx);
+
+    uint8_t buffer[4096];
+    size_t bytes_read;
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+        crc64_update(&ctx, buffer, bytes_read);
+    }
+
+    fclose(file);
+    return crc64_final(&ctx);
+}
+
 int main() {
-    // 生成 CRC64 表
-    generate_crc64_table();
+    // 测试用例
+    CRC64_CTX ctx;
 
-    // 计算文件的 CRC64 值
-    const char *file_path = "image.png";
-    uint64_t file_crc = file_crc64(file_path);
-    printf("文件 %s 的 CRC64 值为: %016lx\n", file_path, file_crc);
+    // 测试字符串 "123456789"
+    crc64_init(&ctx);
+    const char *test_str1 = "123456789";
+    crc64_update(&ctx, test_str1, strlen(test_str1));
+    printf("123456789: %llu\n", (unsigned long long)crc64_final(&ctx));
 
-    // 计算字节数据的 CRC64 值
-    const uint8_t data[] = "Hello, World!";
-    size_t data_length = strlen((const char *)data);
-    uint64_t data_crc = data_crc64(data, data_length);
-    printf("数据 %s 的 CRC64 值为: %016lx\n", data, data_crc);
+    // 测试中文
+    crc64_init(&ctx);
+    const char *test_str = "中文";
+    crc64_update(&ctx, test_str, strlen(test_str));
+    printf("中文: %llu\n", (unsigned long long)crc64_final(&ctx));
 
-    // 合并两个 CRC64 值
-    uint64_t combined_crc = combine_crc64(file_crc, data_crc, data_length);
-    printf("合并后的 CRC64 值为: %016lx\n", combined_crc);
+    // 流式处理测试
+    crc64_init(&ctx);
+    crc64_update(&ctx, "123456", 6);
+    crc64_update(&ctx, "789", 3);
+    printf("流式校验123456789: %llu\n", (unsigned long long)crc64_final(&ctx));
+
+    // 文件校验测试
+    const char *filename = "image.png";
+    printf("文件校验 %s: %llu\n", filename, (unsigned long long)file_crc(filename));
+
+    // 合并测试
+    CRC64_CTX part1, part2;
+    crc64_init(&part1);
+    crc64_update(&part1, "123456", 6);
+    uint64_t crc1 = crc64_final(&part1);
+
+    crc64_init(&part2);
+    crc64_update(&part2, "789", 3);
+    uint64_t crc2 = crc64_final(&part2);
+
+    uint64_t combined = crc64_combine(crc1, crc2, 3);
+    printf("合并结果: %llu\n", (unsigned long long)combined);
 
     return 0;
 }

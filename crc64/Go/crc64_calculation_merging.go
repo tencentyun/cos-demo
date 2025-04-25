@@ -2,82 +2,210 @@ package main
 
 import (
 	"fmt"
-	"hash/crc64"
+	"hash"
 	"io"
 	"os"
 )
 
-// 计算文件的 CRC64 值
-func fileCRC64(path string) (uint64, error) {
+// CRC64 参数 (ECMA-182)
+const (
+	CRC64Poly   = 0xC96C5795D7870F42
+	CRC64Init   = 0xFFFFFFFFFFFFFFFF
+	CRC64XorOut = 0xFFFFFFFFFFFFFFFF
+	GF2Dim      = 64
+)
+
+var crcTable = generateTable()
+
+type CRC64 struct {
+	sum uint64
+}
+
+// 生成预计算表
+func generateTable() [256]uint64 {
+	var table [256]uint64
+	for i := 0; i < 256; i++ {
+		crc := uint64(i)
+		for j := 0; j < 8; j++ {
+			if crc&1 == 1 {
+				crc = (crc >> 1) ^ CRC64Poly
+			} else {
+				crc >>= 1
+			}
+		}
+		table[i] = crc
+	}
+	return table
+}
+
+// 创建新的 CRC64 计算器
+func NewCRC64() hash.Hash64 {
+	return &CRC64{sum: CRC64Init}
+}
+
+func (c *CRC64) Write(p []byte) (n int, err error) {
+	c.Update(p)
+	return len(p), nil
+}
+
+func (c *CRC64) Sum(b []byte) []byte {
+	s := c.Sum64()
+	return append(b, byte(s>>56), byte(s>>48), byte(s>>40), byte(s>>32),
+		byte(s>>24), byte(s>>16), byte(s>>8), byte(s))
+}
+
+func (c *CRC64) Reset() {
+	c.sum = CRC64Init
+}
+
+func (c *CRC64) Size() int {
+	return 8
+}
+
+func (c *CRC64) BlockSize() int {
+	return 1
+}
+
+func (c *CRC64) Sum64() uint64 {
+	return c.sum ^ CRC64XorOut
+}
+
+func (c *CRC64) Update(p []byte) {
+	for _, b := range p {
+		index := (c.sum ^ uint64(b)) & 0xFF
+		c.sum = (c.sum >> 8) ^ crcTable[index]
+	}
+}
+
+// 合并两个 CRC 值
+func CombineCRC64(crc1, crc2 uint64, len2 uint64) uint64 {
+	if len2 == 0 {
+		return crc1
+	}
+
+	// 调整初始状态
+	crc1 ^= CRC64Init ^ CRC64XorOut
+
+	// 初始化 GF(2) 矩阵
+	var even, odd [GF2Dim]uint64
+
+	// 构建反转多项式矩阵
+	odd[0] = CRC64Poly
+	row := uint64(1)
+	for n := 1; n < GF2Dim; n++ {
+		odd[n] = row
+		row <<= 1
+	}
+
+	gf2MatrixSquare(even[:], odd[:])
+	gf2MatrixSquare(odd[:], even[:])
+
+	for {
+		gf2MatrixSquare(even[:], odd[:])
+		if len2&1 != 0 {
+			crc1 = gf2MatrixTimes(even[:], crc1)
+		}
+		len2 >>= 1
+		if len2 == 0 {
+			break
+		}
+
+		gf2MatrixSquare(odd[:], even[:])
+		if len2&1 != 0 {
+			crc1 = gf2MatrixTimes(odd[:], crc1)
+		}
+		len2 >>= 1
+		if len2 == 0 {
+			break
+		}
+	}
+
+	return (crc1 ^ crc2)
+}
+
+func gf2MatrixTimes(mat []uint64, vec uint64) uint64 {
+	sum := uint64(0)
+	idx := 0
+	for vec != 0 {
+		if vec&1 != 0 {
+			sum ^= mat[idx]
+		}
+		vec >>= 1
+		idx++
+	}
+	return sum
+}
+
+func gf2MatrixSquare(square, mat []uint64) {
+	for n := 0; n < GF2Dim; n++ {
+		square[n] = gf2MatrixTimes(mat, mat[n])
+	}
+}
+
+// 文件校验函数
+func FileCRC(path string) (uint64, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return 0, err
 	}
 	defer file.Close()
 
-	table := crc64.MakeTable(crc64.ECMA)
-	hash := crc64.New(table)
-	_, err = io.Copy(hash, file)
-	if err != nil {
-		return 0, err
-	}
-	return hash.Sum64(), nil
-}
-
-// 计算字节数据的 CRC64 值
-func dataCRC64(data []byte) uint64 {
-	table := crc64.MakeTable(crc64.ECMA)
-	return crc64.Checksum(data, table)
-}
-
-// 流式计算 CRC64 值
-func streamCRC64(r io.Reader) (uint64, error) {
-	table := crc64.MakeTable(crc64.ECMA)
-	hash := crc64.New(table)
-	_, err := io.Copy(hash, r)
-	if err != nil {
-		return 0, err
-	}
-	return hash.Sum64(), nil
-}
-
-// 合并两个 CRC64 值
-func combineCRC64(crc1, crc2 uint64, len2 uint64) uint64 {
-	var delta [8]uint64
-	for i := 0; i < 8; i++ {
-		delta[i] = 1 << (56 - i)
-		for j := 0; j < 8; j++ {
-			if delta[i]&(1<<63) != 0 {
-				delta[i] = (delta[i] << 1) ^ crc64.ECMA
-			} else {
-				delta[i] = delta[i] << 1
-			}
+	crc := NewCRC64().(*CRC64)
+	buf := make([]byte, 4096)
+	for {
+		n, err := file.Read(buf)
+		if err != nil && err != io.EOF {
+			return 0, err
 		}
-	}
-
-	for ; len2 > 0; len2-- {
-		for i := 0; i < 8; i++ {
-			if crc1&(1<<63) != 0 {
-				crc1 = (crc1 << 1) ^ crc64.ECMA
-			} else {
-				crc1 = crc1 << 1
-			}
+		if n == 0 {
+			break
 		}
+		crc.Update(buf[:n])
 	}
-	return crc1 ^ crc2
+	return crc.Sum64(), nil
 }
+
 func main() {
-	// 计算文件的 CRC64
-	filePath := "image.png"
-	fileCRC, _ := fileCRC64(filePath)
-	fmt.Printf("文件 %s 的 CRC64 值: %x\n", filePath, fileCRC)
+	// 测试字符串计算
+	testCRC64("123456789", 11051210869376104954)
+	testCRC64("中文", 16371802884590399230) // 需要实际测试值
 
-	// 模拟流数据并计算 CRC64
-	streamData := []byte("Hello, World!")
-	streamCRC := dataCRC64(streamData)
-	fmt.Printf("数据 CRC64 值: %x\n", streamCRC)
+	// 流式处理测试
+	testStreamCRC()
 
-	// 合并两个 CRC64 值
-	mergedCRC := combineCRC64(fileCRC, streamCRC, uint64(len("Hello, World!")))
-	fmt.Printf("合并后的 CRC64 值: %x\n", mergedCRC)
+	// 文件校验测试
+	if crc, err := FileCRC("image.png"); err == nil {
+		fmt.Printf("文件校验结果: %d\n", crc)
+	}
+
+	// 合并测试
+	testCombineCRC()
+}
+
+func testCRC64(data string, expected uint64) {
+	crc := NewCRC64().(*CRC64)
+	crc.Update([]byte(data))
+	result := crc.Sum64()
+	fmt.Printf("%s: %d (%v)\n", data, result, result == expected)
+}
+
+func testStreamCRC() {
+	crc := NewCRC64().(*CRC64)
+	crc.Update([]byte("123456"))
+	crc.Update([]byte("789"))
+	result := crc.Sum64()
+	fmt.Printf("流式校验: %d\n", result)
+}
+
+func testCombineCRC() {
+	crc1 := NewCRC64().(*CRC64)
+	crc1.Update([]byte("123456"))
+	sum1 := crc1.Sum64()
+
+	crc2 := NewCRC64().(*CRC64)
+	crc2.Update([]byte("789"))
+	sum2 := crc2.Sum64()
+
+	combined := CombineCRC64(sum1, sum2, 3)
+	fmt.Printf("合并结果: %d\n", combined)
 }

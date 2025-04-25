@@ -1,144 +1,214 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 
 namespace CRC64Calculation
 {
     public class CRC64Calculator
     {
-        // 定义 ECMA 多项式
-        private const ulong CRC64_POLY = 0xc96c5795d7870f42L;
-        private static readonly ulong[] CRC64_TABLE = new ulong[256];
+        // CRC64 参数 (ECMA-182)
+        private const ulong Poly = 0xC96C5795D7870F42UL;
+        private const ulong Init = 0xFFFFFFFFFFFFFFFFUL;
+        private const ulong XorOut = 0xFFFFFFFFFFFFFFFFUL;
+        private const int GF2Dim = 64;
 
+        // 预计算表
+        private static readonly ulong[] Table = new ulong[256];
+
+        // 静态构造函数初始化表
         static CRC64Calculator()
         {
-            // 生成 CRC64 表
-            for (ulong i = 0; i < 256; i++)
+            for (int i = 0; i < 256; i++)
             {
-                ulong crc = i;
+                ulong crc = (ulong)i;
                 for (int j = 0; j < 8; j++)
                 {
                     if ((crc & 1) == 1)
-                    {
-                        crc = (crc >> 1) ^ CRC64_POLY;
-                    }
+                        crc = (crc >> 1) ^ Poly;
                     else
-                    {
                         crc >>= 1;
-                    }
                 }
-                CRC64_TABLE[i] = crc;
+
+                Table[i] = crc;
             }
         }
 
-        /// <summary>
-        /// 计算字节数组的 CRC64 值
-        /// </summary>
-        /// <param name="data">字节数组</param>
-        /// <returns>CRC64 值</returns>
-        public static ulong CalculateCRC64(byte[] data)
+        private ulong _crc;
+
+        public CRC64Calculator()
         {
-            ulong crc = 0;
-            foreach (byte b in data)
-            {
-                crc = (crc >> 8) ^ CRC64_TABLE[(crc ^ b) & 0xff];
-            }
-            return crc;
+            Reset();
         }
 
-        /// <summary>
-        /// 计算文件的 CRC64 值
-        /// </summary>
-        /// <param name="filePath">文件路径</param>
-        /// <returns>CRC64 值</returns>
-        public static ulong CalculateFileCRC64(string filePath)
+        public void Reset()
         {
-            ulong crc = 0;
-            try
-            {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                {
-                    byte[] buffer = new byte[4096];
-                    int bytesRead;
-                    while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        for (int i = 0; i < bytesRead; i++)
-                        {
-                            crc = (crc >> 8) ^ CRC64_TABLE[(crc ^ buffer[i]) & 0xff];
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"文件读取错误: {ex.Message}");
-            }
-            return crc;
+            _crc = Init;
         }
 
-        /// <summary>
-        /// 合并两个 CRC64 值
-        /// </summary>
-        /// <param name="crc1">第一个 CRC64 值</param>
-        /// <param name="crc2">第二个 CRC64 值</param>
-        /// <param name="len2">第二个数据块的长度</param>
-        /// <returns>合并后的 CRC64 值</returns>
-        public static ulong CombineCRC64(ulong crc1, ulong crc2, int len2)
+        public void Update(byte[] data)
         {
-            ulong[] delta = new ulong[8];
-            for (int i = 0; i < 8; i++)
+            Update(data, 0, data.Length);
+        }
+
+        public void Update(byte[] data, int offset, int length)
+        {
+            for (int i = offset; i < offset + length; i++)
             {
-                delta[i] = 1UL << (56 - i);
-                for (int j = 0; j < 8; j++)
-                {
-                    if ((delta[i] & (1UL << 63)) != 0)
-                    {
-                        delta[i] = (delta[i] << 1) ^ CRC64_POLY;
-                    }
-                    else
-                    {
-                        delta[i] <<= 1;
-                    }
-                }
+                _crc = Table[(_crc ^ data[i]) & 0xFF] ^ (_crc >> 8);
+            }
+        }
+
+        public ulong Final()
+        {
+            return _crc ^ XorOut;
+        }
+
+        public static ulong Combine(ulong crc1, ulong crc2, ulong len2)
+        {
+            if (len2 == 0)
+                return crc1;
+
+            // 调整初始状态
+            crc1 ^= (Init ^ XorOut);
+
+            // 初始化 GF(2) 矩阵
+            ulong[] even = new ulong[GF2Dim];
+            ulong[] odd = new ulong[GF2Dim];
+
+            // 构建反转多项式矩阵
+            odd[0] = Poly;
+            ulong row = 1;
+            for (int n = 1; n < GF2Dim; n++)
+            {
+                odd[n] = row;
+                row <<= 1;
             }
 
-            for (int i = 0; i < len2; i++)
+            // 矩阵平方运算
+            GF2MatrixSquare(even, odd);
+            GF2MatrixSquare(odd, even);
+
+            // 合并运算
+            while (true)
             {
-                for (int j = 0; j < 8; j++)
-                {
-                    if ((crc1 & (1UL << 63)) != 0)
-                    {
-                        crc1 = (crc1 << 1) ^ CRC64_POLY;
-                    }
-                    else
-                    {
-                        crc1 <<= 1;
-                    }
-                }
+                GF2MatrixSquare(even, odd);
+                if ((len2 & 1) == 1)
+                    crc1 = GF2MatrixTimes(even, crc1);
+                len2 >>= 1;
+                if (len2 == 0) break;
+
+                GF2MatrixSquare(odd, even);
+                if ((len2 & 1) == 1)
+                    crc1 = GF2MatrixTimes(odd, crc1);
+                len2 >>= 1;
+                if (len2 == 0) break;
             }
 
             return crc1 ^ crc2;
         }
+
+        private static ulong GF2MatrixTimes(ulong[] mat, ulong vec)
+        {
+            ulong sum = 0;
+            int index = 0;
+            while (vec != 0)
+            {
+                if ((vec & 1) == 1)
+                    sum ^= mat[index];
+                vec >>= 1;
+                index++;
+            }
+
+            return sum;
+        }
+
+        private static void GF2MatrixSquare(ulong[] square, ulong[] mat)
+        {
+            for (int n = 0; n < GF2Dim; n++)
+            {
+                square[n] = GF2MatrixTimes(mat, mat[n]);
+            }
+        }
+
+        // 文件校验方法
+        public static ulong ComputeFile(string path)
+        {
+            using (FileStream stream = File.OpenRead(path))
+            {
+                CRC64Calculator crc = new CRC64Calculator();
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    crc.Update(buffer, 0, bytesRead);
+                }
+
+                return crc.Final();
+            }
+        }
     }
 
-    class CRC64Calculation
+    class Program
     {
         static void Main()
         {
-            // 测试数据
-            byte[] data = System.Text.Encoding.UTF8.GetBytes("Hello, World!");
+            // 标准测试
+            TestString("123456789", 11051210869376104954);
+            TestString("中文", 16371802884590399230); // 需要实际测试值
 
-            // 计算数据的 CRC64 值
-            ulong dataCRC = CRC64Calculator.CalculateCRC64(data);
-            Console.WriteLine($"数据的 CRC64 值为: {dataCRC:X16}");
+            // 流式处理测试
+            TestStream();
 
-            // 计算文件的 CRC64 值
-            string filePath = "/Users/garenwang/RiderProjects/ConsoleApp2/ConsoleApp2/image.png";
-            ulong fileCRC = CRC64Calculator.CalculateFileCRC64(filePath);
-            Console.WriteLine($"文件的 CRC64 值为: {fileCRC:X16}");
+            // 文件校验测试
+            TestFile("/Users/garenwang/RiderProjects/ConsoleApp2/ConsoleApp2/image.png");
 
-            // 合并两个 CRC64 值
-            ulong combinedCRC = CRC64Calculator.CombineCRC64(dataCRC, fileCRC, data.Length);
-            Console.WriteLine($"合并后的 CRC64 值为: {combinedCRC:X16}");
+            // 合并测试
+            TestCombine();
+        }
+
+        static void TestString(string data, ulong expected)
+        {
+            CRC64Calculator crc = new CRC64Calculator();
+            byte[] bytes = Encoding.UTF8.GetBytes(data);
+            crc.Update(bytes);
+            ulong result = crc.Final();
+            Console.WriteLine($"{data}: {result} ({(result == expected ? "通过" : "失败")})");
+        }
+
+        static void TestStream()
+        {
+            CRC64Calculator crc = new CRC64Calculator();
+            crc.Update(Encoding.ASCII.GetBytes("123456"));
+            crc.Update(Encoding.ASCII.GetBytes("789"));
+            ulong result = crc.Final();
+            Console.WriteLine($"流式校验: {result}");
+        }
+
+        static void TestFile(string path)
+        {
+            try
+            {
+                ulong crc = CRC64Calculator.ComputeFile(path);
+                Console.WriteLine($"文件 {path} 的 CRC64: {crc}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"文件校验失败: {ex.Message}");
+            }
+        }
+
+        static void TestCombine()
+        {
+            CRC64Calculator crc1 = new CRC64Calculator();
+            crc1.Update(Encoding.ASCII.GetBytes("123456"));
+            ulong sum1 = crc1.Final();
+
+            CRC64Calculator crc2 = new CRC64Calculator();
+            crc2.Update(Encoding.ASCII.GetBytes("789"));
+            ulong sum2 = crc2.Final();
+
+            ulong combined = CRC64Calculator.Combine(sum1, sum2, 3);
+            Console.WriteLine($"合并结果: {combined}");
         }
     }
-}    
+}
