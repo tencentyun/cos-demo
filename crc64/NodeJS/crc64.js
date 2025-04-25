@@ -17961,6 +17961,7 @@ run();
     var crcPtrFreed = false;
     var calculator = {
       update: function (chunk) {
+        if (typeof chunk === 'string') chunk = Buffer.from(chunk);
         var buffPtr = buffToPtr(chunk);
         raw.crc64(crcPtr, buffPtr, chunk.length);
         binding._free(buffPtr);
