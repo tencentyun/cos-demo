@@ -9,12 +9,24 @@ const pathLib = require("path");
 // 配置参数
 const config = {
     // 获取腾讯云密钥，建议使用限定权限的子用户的密钥 https://console.cloud.tencent.com/cam/capi
-    secretId: process.env.SecretId,
-    secretKey: process.env.SecretKey,
+    secretId: 'xxx',
+    secretKey: 'xxx',
     // 播放秘钥，可通过到控制台（存储桶详情->数据处理->媒体处理）获取填写到这里，也可以调用万象 API 获取
-    playKey: process.env.PlayKey,
+    playKey: "xxx",
+    // 视频存放的存储桶和地域
     bucket: 'ci-1250000000',
     region: 'ap-chongqing',
+    // 指定域名是否使用 CDN 域名，如果为 true，playUrl 不需要签名 authorization
+    useCdn: false,
+    // 播放链接用什么域名，可以填写存储桶域名、CDN 域名、COS自定义域名
+    playUrlHost: 'ci-1250000000.cos.ap-chongqing.myqcloud.com',
+    // playerUrl 的参数，根据实际需要传参
+    playUrlQuery: {
+        'ci-process': 'pm3u8', // 请求类型，pm3u8 私有链接播放、getplaylist 边转边播
+        'expires': 3600, // pm3u8 的参数
+        'tokenType': 'JwtToken', // 私有加密场景，需要传入该参数
+        // ... 这里放其他参数，这里加上会加入签名计算。
+    },
 };
 
 // 创建临时密钥服务和用于调试的静态服务
@@ -24,28 +36,22 @@ app.use(express.static(pathLib.resolve(__dirname, './www'))); // 对项目跟路
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+
+// query 对象转字符串
+const obj2str = function (obj) {
+    return Object.keys(obj).map(key => {
+        return key + '=' + encodeURIComponent(obj[key]);
+    }).join('&');
+};
+
 // 获取播放 token
-const srcReg = /^https?:\/\/([^/]+)\/([^?]+)/;
-const ciHostReg = /^[^.]+\.ci\.[^.]+\.myqcloud\.com$/;
-function getToken({publicKey, protectContentKey, bucket, region, src}) {
-    const m = src.match(srcReg);
-    const srcHost = m[1];
-    const pathKey = m[2];
-    const query = {};
-    const isCiHost = ciHostReg.test(srcHost);
-    src.replace(/^([^?]+)(\?([^#]+))?(#.*)?$/, '$3').split('&').forEach(item => {
-        const index = item.indexOf('=');
-        const key = index > -1 ? item.slice(0, index) : item;
-        let val = index > -1 ? item.slice(index + 1) : '';
-        query[key] = decodeURIComponent(val);
-    });
-    let objectKey = isCiHost ? query.object : pathKey;
+function getToken({publicKey, protectContentKey, bucket, objectKey, query, headers}) {
     const header = {
         "alg": "HS256",
         "typ": "JWT"
     }
     const appId = bucket.slice(bucket.lastIndexOf('-') + 1);
-    let payload = {
+    const payload = {
         Type: "CosCiToken",
         AppId: appId,
         BucketId: bucket,
@@ -57,26 +63,27 @@ function getToken({publicKey, protectContentKey, bucket, region, src}) {
         UsageLimit: 50,
         Object: objectKey,
     };
-    let Header = base64Url.encode(JSON.stringify(header))
-    let PayLoad = base64Url.encode(JSON.stringify(payload))
-    let data = Header + "." + PayLoad
-    let hash = crypto.createHmac('sha256', config.playKey).update(data).digest();
-    let Signature = base64Url.encode(hash);
-    let token = Header + '.' + PayLoad + '.' + Signature
-    let authorization = COS.getAuthorization({
+    const Header = base64Url.encode(JSON.stringify(header))
+    const PayLoad = base64Url.encode(JSON.stringify(payload))
+    const data = Header + "." + PayLoad
+    const hash = crypto.createHmac('sha256', config.playKey).update(data).digest();
+    const Signature = base64Url.encode(hash);
+    const token = Header + '.' + PayLoad + '.' + Signature
+    const authorization = COS.getAuthorization({
         SecretId: config.secretId,
         SecretKey: config.secretKey,
         Method: 'get',
         Pathname: `/${objectKey}`,
-        Query: {'ci-process': 'pm3u8'},
+        Query: query,
+        Headers: headers,
     });
     return {token, authorization};
 }
 
-// 提供接口，给前端/App播放器，获取播放 token
-app.post('/hls/token', (req, res, next) => {
+// 提供接口，给前端/App播放器，获取播放 url
+app.post('/hls/getPlayUrl', (req, res, next) => {
     const body = req.body || {}
-    const src = body.src;
+    const objectKey = body.objectKey;
     const publicKey = body.publicKey;
     const protectContentKey = parseInt(body.protectContentKey || 0);
 
@@ -91,17 +98,27 @@ app.post('/hls/token', (req, res, next) => {
         return res.send({code: -1, message: 'protectContentKey=0 not allowed'});
     }
 
-    // src 链接校验
-    if (!src || !srcReg.test(src)) return res.send({code: -1, message: 'src format error'});
+    // 校验参数
     if (!publicKey) return res.send({code: -1, message: 'publicKey empty'});
 
-    // 解析 url
-    const { bucket, region } = config;
-    const { token, authorization } = getToken({publicKey, protectContentKey, bucket, region, src}, res)
-
-    res.send({code: 0, message: 'ok', token, authorization});
+    // 构造请求信息
+    const opt = {
+        publicKey,
+        protectContentKey,
+        objectKey,
+        bucket: config.bucket,
+        query: config.playUrlQuery,
+        headers: {host: config.playUrlHost},
+    };
+    // 计算 token、authorization
+    const {token, authorization} = getToken(opt);
+    // 拼接 url
+    let playUrl = `https://${config.playUrlHost}/${objectKey}?${obj2str(config.playUrlQuery)}&token=${token}`;
+    // 如果是 CDN 域名，playUrl 不需要带签名 authorization
+    if (!config.useCdn) playUrl += '&' + authorization;
+    // 返回 playUrl 给前端用于播放
+    res.send({code: 0, message: 'ok', playUrl});
 });
-
 
 app.all('*', function (req, res, next) {
     res.send({code: -1, message: '404 Not Found'});
