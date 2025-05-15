@@ -1,0 +1,15 @@
+{
+    "name": "sts/demo",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "wjielai",
+            "email": "wjielai@tencent.com"
+        }
+    ],
+    "require": {
+        "qcloud_sts/qcloud-sts-sdk": "3.0.*",
+        "qcloud/cos-sdk-v5": ">=2.0"
+    }
+}

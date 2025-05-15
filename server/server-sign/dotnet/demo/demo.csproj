@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <!-- <ItemGroup>
+    <ProjectReference Include="..\sdk\COSSTS.csproj">
+      <Project>{FC694C68-F0E3-411F-8E6C-2E9F94826016}</Project>
+      <Name>COSSTS</Name>
+    </ProjectReference>
+  </ItemGroup> -->
+  
+  <ItemGroup>
+    <PackageReference Include="Tencent.QCloud.Cos.Sts.Sdk" Version="3.0.*" />
+    <PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.*" />
+  </ItemGroup>
+
+</Project>
