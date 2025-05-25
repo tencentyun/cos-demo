@@ -18,7 +18,7 @@ using Formatting = System.Xml.Formatting;
 
 namespace COSSnippet
 {
-    public class GetKeyAndCredentials
+    public class ServerSign
     {
         //永久密钥
         string secretId = "";
@@ -159,7 +159,7 @@ namespace COSSnippet
         }
         static void Main(string[] args)
         {
-            GetKeyAndCredentials m = new GetKeyAndCredentials();
+            ServerSign m = new ServerSign();
             Dictionary<string, object> result = m.GetCredential();
             Dictionary<string, object> credentials = (Dictionary<string, object>)result["credentials"];
             string tmpSecretId = (string)credentials["tmpSecretId"];

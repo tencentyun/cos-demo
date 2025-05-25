@@ -13,7 +13,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class GetKeyAndCredentialsTest {
+public class ServerSignTest {
 
     public static String generateCosKey(String ext) {
         Date date = new Date();

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>腾讯云企业网盘 - 下载</title>
+    <style>
+        * {
+            font-family: "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            color: #333;
+        }
+        body {
+            background: #f5f7fa;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            max-width: 600px;
+            width: 100%;
+        }
+        .app-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .app-icon {
+            width: 120px;
+            height: 120px;
+            border-radius: 15px;
+            margin: 0 auto 15px;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .app-name {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .version-info {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .download-btn {
+            display: block;
+            width: 100%;
+            background: #1890ff;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        .download-btn:hover {
+            background: #096dd9;
+        }
+        .qrcode-box {
+            text-align: center;
+            margin: 25px 0;
+        }
+        .qrcode-img {
+            width: 180px;
+            height: 180px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .notice {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-top: 25px;
+        }
+        .warning {
+            color: #ff4d4f;
+            margin: 15px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 应用信息 -->
+    <div class="app-info">
+        <div class="app-icon">
+            <!-- 替换为实际图标URL -->
+            <img src="https://cofile-1253960454.cos.ap-guangzhou.myqcloud.com/ios/store_1024pt.png"
+                 alt="腾讯云企业网盘图标"
+                 width="80"
+                 height="80">
+        </div>
+        <h2 class="app-name">腾讯云企业网盘</h2>
+        <div class="version-info">
+            版本 2.6.8 (Build 2060800) | 大小 22.6 MB<br>
+            更新时间 2025-05-22 16:01:44
+        </div>
+    </div>
+
+    <!-- 下载按钮 -->
+    <a href="itms-services://?action=download-manifest&url=https://cofile-1253960454.cos.ap-guangzhou.myqcloud.com/ios/QCloudECDClient_2.6.8.ipa"
+       class="download-btn">
+        <i class="fa fa-download" aria-hidden="true"></i> 下载安装（适用于iOS）
+    </a>
+
+    <!-- 二维码下载 -->
+    <div class="qrcode-box">
+        <p>或扫描二维码下载</p>
+        <img src="https://picsum.photos/200/200?random=123"
+             alt="下载二维码"
+             class="qrcode-img">
+    </div>
+
+    <!-- 使用说明 -->
+    <div class="notice">
+        <p class="warning">⚠️ 提示：</p>
+        <p>1. 安装时若提示“未受信任的企业级开发者”，请前往 <strong>设置-通用-设备管理</strong> 信任该应用。</p>
+        <p>2. 本应用由第三方提供，下载前请确认来源安全。</p>
+    </div>
+
+    <!-- 免责声明 -->
+    <div class="footer">
+        <p>免责声明：</p>
+        <p>平台仅提供下载技术支持，不对应用内容、安全性等负责。如遇纠纷，请联系应用方或相关部门。</p>
+        <p>© 2025 腾讯云企业网盘 版权所有</p>
+    </div>
+</div>
+</body>
+</html>
