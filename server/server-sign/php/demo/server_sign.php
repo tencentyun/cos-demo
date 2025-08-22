@@ -128,8 +128,8 @@ function getSign()
             'Bucket' => $bucket,
             'Key' => $key,
             'Body' => "",
-            'Params'=> array('x-cos-security-token' => $sessionToken),
-            'Headers'=> array(),
+            'Params'=> array(),
+            'Headers'=> array('x-cos-security-token' => $sessionToken),
         ), $expiredTime - $startTime); //签名的有效时间
 
         $parsedUrl = parse_url($url);
