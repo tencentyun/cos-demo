@@ -1,10 +1,7 @@
 // 临时密钥服务例子
 var express = require('express');
 var crypto = require('crypto');
-var moment = require('moment');
 var STS = require('qcloud-cos-sts');
-const url = require('url');
-const { log } = require('console');
 
 // 配置参数
 var config = {
@@ -56,7 +53,6 @@ var getTempCredential = async function(cosKey){
     return tempKeys;
   } catch(err){
     console.log(err);
-    res.send(JSON.stringify(err));
     return null;
   }
 };
